@@ -30,24 +30,27 @@
 
 ---
 
-**Phase 1: Foundational Setup (~30 mins)**
+**Phase 1: Foundational Setup (~30 mins) - DONE**
 
 1.  **Wait for Bhavya:** Need initial `firebaseConfig.js` (for `auth`) and `QuicaModel.js` (for model structure).
-2.  **Basic Auth UI & Initial Views:**
-    *   **Action:** Create `src/components/auth/GoogleSignInButton.jsx` (optional, button can be in presenter). Takes `onSignIn` prop.
-    *   **Action:** Create `src/components/requester/GroceryListView.jsx`. Takes `items` array and **`onAddToCart` function** props. Renders item names and an "Add" button next to each, calling `onAddToCart(item)` when clicked.
-    *   **Action:** Create `src/components/requester/CartView.jsx`. Takes `cartItems` array prop. Renders a simple list of item names (and maybe prices/quantity) from the cart.
-    *   **Action:** `git add .`, `git commit -m "feat: Create basic auth, grocery list, and cart view components"`, `git push`.
-    *   **Checkpoint/Communication:** Basic UI shells ready.
+2.  **Basic Auth UI & Initial Views: [DONE]**
+    *   Created `src/components/auth/GoogleSignInButton.jsx`.
+    *   Created `src/components/requester/GroceryListView.jsx`.
+    *   Created `src/components/requester/CartView.jsx`.
+    *   Tested components visually using mock data in `App.jsx`.
+    *   Committed as "feat: Create basic auth, grocery list, and cart view components".
 
-**Phase 2: Core Logic Implementation (~60 mins)**
+**Phase 2: Presenter Implementation (~60-90 mins)**
+
+*   **Goal:** Create the Presenter components that will connect Views to the Model. Implement basic structure first, then add logic as dependencies become available.
+*   **Next Steps (Can be started even without full dependencies):**
 
 1.  **Action:** `git pull` to get Bhavya's config/model.
 2.  **Auth Presenter (Google Sign-in):**
     *   **Action:** Create `src/presenters/AuthPresenter.jsx`. Import `auth` from persistence. Implement `handleGoogleSignIn` using `signInWithPopup`. Render the sign-in button.
     *   **Action:** `git add .`, `git commit -m "feat: Implement AuthPresenter for Google Sign-in"`, `git push`.
     *   **Checkpoint/Communication:** Auth presenter ready, clicking should trigger Bhavya's `onAuthStateChanged`.
-3.  **Grocery List Presenter:**
+3.  **Grocery List Presenter (Requires Model):**
     *   **Action:** Create `src/presenters/GroceryListPresenter.jsx`.
     *   **Action:** Import `observer`, `useEffect`, `myQuicaModel`, `GroceryListView`. Wrap component with `observer`.
     *   **Action:** Use `useEffect` to call `myQuicaModel.loadGroceryItems()` on mount (if logged in).
@@ -56,7 +59,7 @@
     *   **Action:** Render loading/error or `<GroceryListView items={myQuicaModel.groceryItems} onAddToCart={handleAddToCart} />`.
     *   **Action:** `git add .`, `git commit -m "feat: Implement grocery list presenter fetching data and handling add to cart"`, `git push`.
     *   **Checkpoint/Communication:** Grocery list should display data from Bhavya's API call and clicking "Add" should call his model action.
-4.  **Cart Presenter:**
+4.  **Cart Presenter (Requires Model):**
     *   **Action:** Create `src/presenters/CartPresenter.jsx`.
     *   **Action:** Import `observer`, `myQuicaModel`, `CartView`. Wrap component with `observer`.
     *   **Action:** Read `myQuicaModel.cart`.
@@ -64,7 +67,7 @@
     *   **Action:** `git add .`, `git commit -m "feat: Implement cart presenter displaying frontend cart state"`, `git push`.
     *   **Checkpoint/Communication:** Cart display ready, should reflect items added via `GroceryListPresenter`.
 
-**Phase 3: Integration & Testing (~45 mins - Collaborative)**
+**Phase 3: Integration & Testing (~45 mins - Collaborative - Requires Presenters & Model)**
 
 1.  **Action:** `git pull` frequently.
 2.  **Root Component (`App.jsx`) Setup:**
@@ -82,7 +85,7 @@
     *   **Action:** Debug UI (`observer` wraps, props, rendering logic). Communicate with Bhavya about model state issues.
 
 **Phase 4: Deploy & Document (~15-30 mins - Collaborative)**
-
+*   **(Requires functional app)**
 1.  **Action:** Coordinate build & deploy (Firebase Hosting). Get URL.
 2.  **README.md:**
     *   **Action:** Detail UI components, Presenters, `App.jsx` logic, Google Sign-in flow, **Simple Grocery Store API** usage, mention **frontend cart** implementation for now, planned work (API cart integration, orders, roles, UI polish).
