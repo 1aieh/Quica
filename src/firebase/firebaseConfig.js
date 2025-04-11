@@ -4,7 +4,7 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import dotenv from "dotenv"; // Import dotenv
 
-dotenv.config(); // Load variables from .env file into process.env
+dotenv.config({ path: '.env.local' }); // Load variables from .env.local file into process.env
 
 // Access variables via process.env INSTEAD of import.meta.env
 const firebaseConfig = {
