@@ -1,21 +1,18 @@
 import { makeAutoObservable } from "mobx";
 
 class QuicaModelClass {
-
-  user = undefined; 
-  userProfile = null; 
-
+  //state
+  user = undefined;
+  userProfile = null;
+  groceryItems = [];
+  isLoading = false;
+  errorMessage = null;
 
   cart = []; // Array of items in the current cart
   requesterOrders = []; // Array of orders placed by the current user
 
-
   availableOrders = []; // Array of orders available for pickup
   delivererOrders = []; // Array of orders currently assigned to the deliverer
-
-
-  isLoading = false; 
-  errorMessage = null; 
 
   constructor() {
     makeAutoObservable(this);
@@ -30,6 +27,11 @@ class QuicaModelClass {
     // Called after fetching profile from Firestore
     this.userProfile = profileData;
     console.log("Model: User profile set", this.userProfile);
+  }
+
+  setGroceryItems(items) {
+    this.groceryItems = items;
+    console.log("Model: Grocery items set", this.groceryItems);
   }
 
   // Order/Cart Actions (Examples - add more as needed)
@@ -65,6 +67,7 @@ class QuicaModelClass {
   clearUserData() {
     console.log("Model: Clearing user-specific data");
     this.userProfile = null;
+    this.groceryItems = [];
     this.cart = [];
     this.requesterOrders = [];
     this.availableOrders = [];
