@@ -1,4 +1,5 @@
 import { makeAutoObservable } from "mobx";
+import { fetchWalmartGroceries } from "../api/groceryAPI";
 
 class QuicaModelClass {
   //state
@@ -90,6 +91,21 @@ class QuicaModelClass {
   // - Updating order status
   // - Removing items from cart
   // - etc.
+
+  async loadGroceryItems(query = 'vegetables') {
+    this.setLoading(true);
+    this.setError(null);
+    
+    try {
+      const items = await fetchWalmartGroceries(query);
+      this.setGroceryItems(items);
+    } catch (error) {
+      this.setError(error.message || 'Failed to load grocery items');
+      console.error('Error loading grocery items:', error);
+    } finally {
+      this.setLoading(false);
+    }
+  }
 }
 
 export const myQuicaModel = new QuicaModelClass();
