@@ -116,8 +116,8 @@ The primary goal of this course project is to practice building **highly-usable,
 **Authentication:**
 
 *   Sign-up (Email/Password or Google)
-*   Sign-in
-*   Sign-out
+        *   Sign-in (Google) - Implemented and Verified
+        *   Sign-out - Implemented and Verified
 
 **Requester Role:**
 
@@ -139,10 +139,12 @@ The primary goal of this course project is to practice building **highly-usable,
 
 ## 7. Firebase Integration Reminders
 
-*   Use `onAuthStateChanged` in `persistence.js` as the central point for reacting to login/logout.
+*   Use `onAuthStateChanged` in `persistence.js` as the central point for reacting to login/logout (Verified working).
 *   Store user profile data in a Firestore collection (e.g., `users`) using the Firebase Auth `uid` as the document ID.
 *   Structure Firestore queries for orders based on `user.uid` (for requesters/deliverers) and `status` (for available orders).
 *   Use `onSnapshot` for real-time data updates to keep the MobX model synchronized.
+*   User profile data is persisted in Firestore in the `users` collection, using the Firebase Auth `uid` as the document ID.
+*   Orders are persisted in Firestore in the `orders` collection.
 *   Ensure Firestore security rules are configured eventually to enforce per-user data access.
 
 ## 8. High-Grade Strategy Summary

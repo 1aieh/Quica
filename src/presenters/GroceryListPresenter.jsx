@@ -7,15 +7,7 @@ import { useEffect } from 'react';
 const GroceryListPresenter = observer(() => {
   useEffect(() => {
     if (myQuicaModel.groceryItems.length === 0 && myQuicaModel.user) {
-      // TODO: Uncomment once loadGroceryItems is implemented by Bhavya
-      // myQuicaModel.loadGroceryItems();
-      
-      // For now, set some mock items directly
-      myQuicaModel.setGroceryItems([
-        { id: '1', name: 'Milk', price: 3.99 },
-        { id: '2', name: 'Bread', price: 2.49 },
-        { id: '3', name: 'Eggs', price: 4.99 },
-      ]);
+      myQuicaModel.loadGroceryItems('pizza');  // Using example query from Spoonacular docs
     }
   }, [myQuicaModel.user]);
 
@@ -30,10 +22,16 @@ const GroceryListPresenter = observer(() => {
         <div className="text-red-500">{myQuicaModel.errorMessage}</div>
       )}
       {!myQuicaModel.isLoading && !myQuicaModel.errorMessage && (
-        <GroceryListView
-          items={myQuicaModel.groceryItems}
-          onAddToCart={handleAddToCart}
-        />
+        <>
+          {myQuicaModel.groceryItems.length === 0 ? (
+            <div className="text-gray-500 p-4">No grocery items found. Please try again later.</div>
+          ) : (
+            <GroceryListView
+              items={myQuicaModel.groceryItems}
+              onAddToCart={handleAddToCart}
+            />
+          )}
+        </>
       )}
     </div>
   );

@@ -4,9 +4,20 @@ import CartView from '../components/requester/CartView';
 import { myQuicaModel } from '../model/QuicaModel.js';
 
 const CartPresenter = observer(() => {
+  const isLoading = myQuicaModel.isLoading;
+
   return (
     <div>
-      <CartView cartItems={myQuicaModel.cart} />
+      <CartView 
+        items={myQuicaModel.cart}
+        onRemoveFromCart={(item) => {
+          myQuicaModel.removeFromCart(item);
+        }}
+        onPlaceOrder={() => {
+          myQuicaModel.placeOrder();
+        }}
+        isLoading={isLoading}
+      />
     </div>
   );
 });
