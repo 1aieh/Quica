@@ -23,6 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-CONTEXT.md
-LAIEH.md
+# CONTEXT.md
+# LAIEH.md
 bhavya.md
