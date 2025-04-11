@@ -92,12 +92,12 @@ Based on discussion and requirements, the following structures will be used in F
 - Created base UI components for Auth, Grocery List, Cart.
 
 **Phase 2: Presenter Implementation & Core Logic - Mostly Done**
-1. **Auth Integration - DONE**
+1. **Auth Integration - DONE (Fully Verified)**
    - Implemented `AuthPresenter.jsx` with Google Sign-in via `signInWithPopup`.
    - Integrated with Firebase `auth` object.
    - Verified basic login/logout flow updates MobX model (`myQuicaModel.user`).
 2. **User Profile Persistence - Verified Working**
-   - Confirmed that after login, `myQuicaModel.userProfile` is populated with data from Firestore via Bhavya's `persistence.js`.
+   - Confirmed that after login, `myQuicaModel.userProfile` is populated with data from Firestore via Bhavya's `persistence.js`. User profile data is persisted in the `users` collection, and orders are persisted in the `orders` collection.
 3. **Frontend Cart Interaction - DONE**
    - Implemented `CartPresenter` reading `myQuicaModel.cart`.
    - Implemented "Add to Cart" button in `GroceryListPresenter` calling `myQuicaModel.addToCart`.
@@ -163,7 +163,7 @@ Based on discussion and requirements, the following structures will be used in F
 **From Bhavya (Status):**
 - ✅ `firebaseConfig.js` - Received and integrated
 - ✅ `QuicaModel.js` - Base implementation received, `addToCart` and `removeFromCart` working
-- ✅ Firebase Auth - Configured and working
+- ✅ Firebase Auth - Configured and working (Google Sign-in Verified)
 - ✅ User Profile Persistence - Verified working (loads data into model)
 - ✅ `groceryAPI.js` - Completed with Spoonacular API integration
 - ✅ `loadGroceryItems` implementation - Working with new API

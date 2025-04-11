@@ -1,6 +1,10 @@
-const CartView = ({ items = [], onRemoveFromCart, onPlaceOrder }) => {
+const CartView = ({ items = [], onRemoveFromCart, onPlaceOrder, isLoading }) => {
   // Calculate total using rawPrice
   const total = items.reduce((sum, item) => sum + item.rawPrice, 0);
+
+  if (isLoading) {
+    return <div className="text-center">Placing order...</div>;
+  }
 
   if (!items.length) {
     return <div className="text-gray-500">Your cart is empty</div>;
@@ -16,16 +20,28 @@ const CartView = ({ items = [], onRemoveFromCart, onPlaceOrder }) => {
             className="py-4 flex items-center justify-between"
           >
             <div className="flex items-center">
-              {item.image && (
+              {item.image ? (
                 <img
                   src={item.image}
+                  alt={item.name}
+                  className="w-16 h-16 object-cover rounded-md mr-4"
+                  onError={(e) => {
+                    e.target.onerror = null; // Prevent infinite loop
+                    e.target.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="; // Placeholder image
+                  }}
+                />
+              ) : (
+                <img
+                  src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
                   alt={item.name}
                   className="w-16 h-16 object-cover rounded-md mr-4"
                 />
               )}
               <div>
                 <h3 className="text-lg font-medium text-gray-900">{item.name}</h3>
-                <p className="text-sm text-gray-500">{item.price}</p>
+                <p className="text-sm text-gray-500">
+                  {item.price} x {item.quantity || 1} = SEK {((parseFloat(item.price) || 0) * (item.quantity || 1)).toFixed(2)}
+                </p>
               </div>
             </div>
             <button
@@ -41,10 +57,10 @@ const CartView = ({ items = [], onRemoveFromCart, onPlaceOrder }) => {
         <p className="text-lg font-semibold mb-4">Total: SEK {total.toFixed(2)}</p>
         <button
           onClick={() => onPlaceOrder()}
-          disabled={!items.length} // Disable if cart is empty
-          className={`w-full bg-green-600 text-white px-6 py-3 rounded-md font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors ${!items.length ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={!items.length || isLoading} // Disable if cart is empty or placing order
+          className={`w-full bg-green-600 text-white px-6 py-3 rounded-md font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors ${!items.length || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          Place Order
+          {isLoading ? 'Placing order...' : 'Place Order'}
         </button>
       </div>
     </div>

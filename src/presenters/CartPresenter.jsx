@@ -4,6 +4,8 @@ import CartView from '../components/requester/CartView';
 import { myQuicaModel } from '../model/QuicaModel.js';
 
 const CartPresenter = observer(() => {
+  const isLoading = myQuicaModel.isLoading;
+
   return (
     <div>
       <CartView 
@@ -14,6 +16,7 @@ const CartPresenter = observer(() => {
         onPlaceOrder={() => {
           myQuicaModel.placeOrder();
         }}
+        isLoading={isLoading}
       />
     </div>
   );

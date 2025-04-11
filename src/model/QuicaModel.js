@@ -1,5 +1,7 @@
 import { makeAutoObservable } from "mobx";
 import { searchSpoonacularProducts } from "../api/groceryAPI";
+// Import the function to interact with Firestore persistence
+import { placeOrderInFirestore } from "../firebase/persistence.js";
 
 class QuicaModelClass {
   //state
@@ -62,7 +64,23 @@ class QuicaModelClass {
   }
 
   addToCart(item) {
-    this.cart = [...this.cart, item];
+    // Check if the item already exists in the cart
+    const existingItemIndex = this.cart.findIndex(cartItem => cartItem.id === item.id);
+
+    if (existingItemIndex !== -1) {
+      // If item exists, increment its quantity
+      const updatedCart = [...this.cart];
+      const existingItem = updatedCart[existingItemIndex];
+      updatedCart[existingItemIndex] = {
+        ...existingItem,
+        quantity: (existingItem.quantity || 1) + 1
+      };
+      this.cart = updatedCart;
+    } else {
+      // If item doesn't exist, add it with quantity 1
+      this.cart = [...this.cart, { ...item, quantity: 1 }];
+    }
+
     console.log("Model: Item added to cart", item);
   }
 
@@ -95,35 +113,102 @@ class QuicaModelClass {
   placeOrder() {
     if (this.cart.length === 0) {
       this.setError("Cannot place order with empty cart");
-      return false;
-    }
+    return false; // Indicate failure if cart is empty
+  }
 
-    const cartValue = this.cart.reduce((sum, item) => sum + item.rawPrice, 0);
+  if (!this.user || !this.userProfile) {
+    this.setError("User not logged in or profile not loaded.");
+    return false; // Indicate failure
+  }
 
-    // Create order object matching the desired structure
-    const newOrder = {
-      id: Date.now().toString(), // Temporary ID, ensure it's a string
-      items: this.cart.map(item => ({ name: item.name, price: item.rawPrice })), // Simplified item structure for the order
-      cart_value: cartValue,
-      status: 'Unassigned',
-      price: cartValue, // Placeholder: Price might include delivery fee later
-      payment: 'null', // Default payment status
-      rider_id: null, // No rider assigned yet
-      user_id: this.user?.uid,
-      user_address: this.userProfile?.address || 'Address not set', // Placeholder, get from profile if available
-      created_at: new Date().toISOString(), // Use ISO string for now, Firebase uses Timestamps
-      // We might still want the full item details somewhere if needed for display later,
-      // but requesterOrders should primarily hold the defined structure.
-      // Let's add the original items under a different key for now.
-      _originalCartItems: [...this.cart] 
+  this.setLoading(true); // Indicate loading state
+  this.setError(null);   // Clear previous errors
+
+  // Calculate totals and prepare items array for Firestore
+  const itemSubtotal = this.cart.reduce((sum, item) => {
+    // Ensure we have valid price and quantity
+    const price = parseFloat(item.price) || 0;
+    const quantity = parseInt(item.quantity) || 1;
+    return sum + (price * quantity);
+  }, 0);
+  
+  const deliveryFee = 15; // Example fee, make this dynamic later if needed
+  const totalPrice = itemSubtotal + deliveryFee;
+
+  const orderItems = this.cart.map(item => {
+    // Ensure all fields have valid values or null
+    const itemData = {
+      productId: (item.id || '').toString(), // Convert to string, empty string if undefined
+      name: item.name || 'Unknown Item',
+      price: parseFloat(item.price) || 0,
+      quantity: parseInt(item.quantity) || 1,
+      imageUrl: item.image || null
     };
 
-    this.requesterOrders = [...this.requesterOrders, newOrder];
-    this.cart = []; // Clear the cart
-    this.orderJustPlaced = true;
-    console.log("Model: Order placed", newOrder);
-    return true;
-  }
+    // Validate numeric fields
+    if (isNaN(itemData.price)) itemData.price = 0;
+    if (isNaN(itemData.quantity)) itemData.quantity = 1;
+
+    return itemData;
+  });
+
+  // Ensure user profile data is valid
+  const userDisplayName = this.userProfile?.displayName || this.user?.displayName || null;
+  const userAddress = this.userProfile?.address || null;
+  const userPhone = this.userProfile?.phone || null;
+
+  // Construct the order data object for Firestore
+  const orderData = {
+    // Requester Info (Denormalized)
+    requesterUid: this.user.uid,
+    requesterName: userDisplayName,
+    requesterAddress: userAddress,
+    requesterPhone: userPhone,
+
+    // Order Details
+    items: orderItems,
+    itemSubtotal: Number(itemSubtotal.toFixed(2)), // Round to 2 decimal places and ensure it's a number
+    deliveryFee: Number(deliveryFee.toFixed(2)),
+    totalPrice: Number(totalPrice.toFixed(2)),
+    status: 'pending', // Initial status
+
+    // Add timestamps
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+
+  // Final validation to ensure no undefined values
+  Object.keys(orderData).forEach(key => {
+    if (orderData[key] === undefined) {
+      orderData[key] = null;
+    }
+  });
+
+  // Call the persistence function to write to Firestore
+  placeOrderInFirestore(orderData)
+    .then(result => {
+      if (result.success) {
+        console.log("Model: Order successfully placed in Firestore, ID:", result.orderId);
+        this.cart = []; // Clear the cart ONLY on successful placement
+        this.orderJustPlaced = true; // Set flag for UI transition
+        // No need to update this.requesterOrders here, the listener will do it.
+      } else {
+        // Error is already set in persistence function
+        console.error("Model: Failed to place order in Firestore", result.error);
+        // Keep cart as is, maybe show error message
+      }
+    })
+    .finally(() => {
+      this.setLoading(false); // Clear loading state regardless of outcome
+    });
+
+  // Note: This function becomes asynchronous due to the Firestore call,
+  // but we don't necessarily need to return the promise here unless
+  // the calling Presenter needs to wait for it. For now, we handle
+  // state updates internally based on the promise result.
+  // We return true optimistically for the UI flow, error state handles failure.
+  return true;
+}
 
   resetOrderPlacedStatus() {
     this.orderJustPlaced = false;
