@@ -15,18 +15,27 @@ class QuicaModelClass {
   delivererOrders = []; // Array of orders currently assigned to the deliverer
 
   constructor() {
+    // Initialize user as null (not logged in) instead of undefined
+    this.user = null;
     makeAutoObservable(this);
+    console.log("Model: Initialized with user state:", this.user);
   }
 
   setUser(firebaseUser) {
+    console.log("Model: Setting user state", {
+      before: this.user?.uid || null,
+      after: firebaseUser?.uid || null
+    });
     this.user = firebaseUser;
-    console.log("Model: User state set", this.user?.uid || null);
   }
 
   setUserProfile(profileData) {
     // Called after fetching profile from Firestore
+    console.log("Model: Setting user profile", {
+      before: this.userProfile,
+      after: profileData
+    });
     this.userProfile = profileData;
-    console.log("Model: User profile set", this.userProfile);
   }
 
   setGroceryItems(items) {

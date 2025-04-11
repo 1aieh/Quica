@@ -1,45 +1,40 @@
 import { observer } from 'mobx-react-lite';
 import GroceryListView from '../components/requester/GroceryListView';
 
-// TODO: Import model once Bhavya provides it
-// import { myQuicaModel } from '../model/QuicaModel';
+import { myQuicaModel } from '../model/QuicaModel.js';
+import { useEffect } from 'react';
 
 const GroceryListPresenter = observer(() => {
-  // TODO: Implement once model is available
-  // useEffect(() => {
-  //   if (myQuicaModel.groceryItems.length === 0 && myQuicaModel.user) {
-  //     myQuicaModel.loadGroceryItems();
-  //   }
-  // }, [myQuicaModel.user]);
-
-  // const isLoading = myQuicaModel.isLoading;
-  // const error = myQuicaModel.errorMessage;
-  // const items = myQuicaModel.groceryItems;
+  useEffect(() => {
+    if (myQuicaModel.groceryItems.length === 0 && myQuicaModel.user) {
+      // TODO: Uncomment once loadGroceryItems is implemented by Bhavya
+      // myQuicaModel.loadGroceryItems();
+      
+      // For now, set some mock items directly
+      myQuicaModel.setGroceryItems([
+        { id: '1', name: 'Milk', price: 3.99 },
+        { id: '2', name: 'Bread', price: 2.49 },
+        { id: '3', name: 'Eggs', price: 4.99 },
+      ]);
+    }
+  }, [myQuicaModel.user]);
 
   const handleAddToCart = (item) => {
-    // TODO: Implement once model is available
-    console.log('Adding to cart (waiting for model):', item);
-    // myQuicaModel.addToCart(item);
+    myQuicaModel.addToCart(item);
   };
 
-  // TODO: Replace with actual model state
-  const mockItems = [
-    { id: '1', name: 'Milk', price: 3.99 },
-    { id: '2', name: 'Bread', price: 2.49 },
-    { id: '3', name: 'Eggs', price: 4.99 },
-  ];
-
-  // TODO: Add loading/error states once model is available
   return (
     <div>
-      {/* {isLoading && <div>Loading...</div>}
-      {error && <div className="text-red-500">{error}</div>}
-      {!isLoading && !error && ( */}
+      {myQuicaModel.isLoading && <div>Loading...</div>}
+      {myQuicaModel.errorMessage && (
+        <div className="text-red-500">{myQuicaModel.errorMessage}</div>
+      )}
+      {!myQuicaModel.isLoading && !myQuicaModel.errorMessage && (
         <GroceryListView
-          items={mockItems}
+          items={myQuicaModel.groceryItems}
           onAddToCart={handleAddToCart}
         />
-      {/* )} */}
+      )}
     </div>
   );
 });

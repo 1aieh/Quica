@@ -1,21 +1,20 @@
-// TODO: Import auth object once Bhavya provides firebaseConfig.js and persistence.js
-// import { auth } from '../firebase/persistence';
-// import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { observer } from 'mobx-react-lite';
+import { auth } from '../firebase/persistence.js';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import GoogleSignInButton from '../components/auth/GoogleSignInButton';
+import { myQuicaModel } from '../model/QuicaModel.js';
 
-const AuthPresenter = () => {
+function AuthPresenter() {
+  console.log('AuthPresenter render - user state:', myQuicaModel.user);
+  
   const handleGoogleSignIn = async () => {
-    // TODO: Implement once auth is available
-    console.log('Google Sign-in clicked - waiting for auth implementation');
-    
-    // Implementation will be:
-    // try {
-    //   const provider = new GoogleAuthProvider();
-    //   await signInWithPopup(auth, provider);
-    //   // Note: persistence.js's onAuthStateChanged will handle the model update
-    // } catch (error) {
-    //   console.error('Google Sign-in Error:', error);
-    // }
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      // Note: persistence.js's onAuthStateChanged will handle the model update
+    } catch (error) {
+      console.error('Google Sign-in Error:', error);
+    }
   };
 
   return (
@@ -24,6 +23,6 @@ const AuthPresenter = () => {
       <GoogleSignInButton onSignIn={handleGoogleSignIn} />
     </div>
   );
-};
+}
 
-export default AuthPresenter;
+export default observer(AuthPresenter);
