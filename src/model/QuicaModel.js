@@ -1,37 +1,27 @@
-// src/model/QuicaModel.js
 import { makeAutoObservable } from "mobx";
 
 class QuicaModelClass {
-  // --- State Properties ---
 
-  // Authentication & User state
-  user = undefined; // undefined = initial state (checking auth), null = logged out, object = logged in
-  userProfile = null; // Holds additional user data from Firestore (role, name, etc.) once loaded
+  user = undefined; 
+  userProfile = null; 
 
-  // Order / Cart state (requester)
+
   cart = []; // Array of items in the current cart
   requesterOrders = []; // Array of orders placed by the current user
 
-  // Order state (deliverer)
+
   availableOrders = []; // Array of orders available for pickup
   delivererOrders = []; // Array of orders currently assigned to the deliverer
 
-  // Loading / Error state
-  isLoading = false; // General loading indicator
-  errorMessage = null; // For displaying errors
 
-  // --- Constructor ---
+  isLoading = false; 
+  errorMessage = null; 
+
   constructor() {
-    // This makes all properties observable and all methods actions by default.
-    // Crucial step for MobX reactivity!
     makeAutoObservable(this);
   }
 
-  // --- Actions (Methods to change state) ---
-
-  // Auth/User Actions
   setUser(firebaseUser) {
-    // Called from onAuthStateChanged
     this.user = firebaseUser;
     console.log("Model: User state set", this.user?.uid || null);
   }
@@ -59,7 +49,6 @@ class QuicaModelClass {
   }
 
   addToCart(item) {
-    // Example: Needs logic for quantity, duplicates etc.
     this.cart = [...this.cart, item];
     console.log("Model: Item added to cart", item);
   }
@@ -74,7 +63,6 @@ class QuicaModelClass {
   }
 
   clearUserData() {
-    // Called on sign-out
     console.log("Model: Clearing user-specific data");
     this.userProfile = null;
     this.cart = [];
@@ -82,7 +70,6 @@ class QuicaModelClass {
     this.availableOrders = [];
     this.delivererOrders = [];
     this.errorMessage = null;
-    // Keep user=null (set by setUser(null))
   }
 
   // Add more methods here as needed for:
@@ -93,6 +80,4 @@ class QuicaModelClass {
   // - etc.
 }
 
-// --- Singleton Instance ---
-// Create and export a single instance of the model for the whole app to use
 export const myQuicaModel = new QuicaModelClass();
