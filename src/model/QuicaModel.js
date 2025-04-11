@@ -11,6 +11,7 @@ class QuicaModelClass {
 
   cart = []; // Array of items in the current cart
   requesterOrders = []; // Array of orders placed by the current user
+  orderJustPlaced = false; // Flag to track if an order was just placed
 
   availableOrders = []; // Array of orders available for pickup
   delivererOrders = []; // Array of orders currently assigned to the deliverer
@@ -88,6 +89,44 @@ class QuicaModelClass {
     this.availableOrders = [];
     this.delivererOrders = [];
     this.errorMessage = null;
+    this.orderJustPlaced = false;
+  }
+
+  placeOrder() {
+    if (this.cart.length === 0) {
+      this.setError("Cannot place order with empty cart");
+      return false;
+    }
+
+    const cartValue = this.cart.reduce((sum, item) => sum + item.rawPrice, 0);
+
+    // Create order object matching the desired structure
+    const newOrder = {
+      id: Date.now().toString(), // Temporary ID, ensure it's a string
+      items: this.cart.map(item => ({ name: item.name, price: item.rawPrice })), // Simplified item structure for the order
+      cart_value: cartValue,
+      status: 'Unassigned',
+      price: cartValue, // Placeholder: Price might include delivery fee later
+      payment: 'null', // Default payment status
+      rider_id: null, // No rider assigned yet
+      user_id: this.user?.uid,
+      user_address: this.userProfile?.address || 'Address not set', // Placeholder, get from profile if available
+      created_at: new Date().toISOString(), // Use ISO string for now, Firebase uses Timestamps
+      // We might still want the full item details somewhere if needed for display later,
+      // but requesterOrders should primarily hold the defined structure.
+      // Let's add the original items under a different key for now.
+      _originalCartItems: [...this.cart] 
+    };
+
+    this.requesterOrders = [...this.requesterOrders, newOrder];
+    this.cart = []; // Clear the cart
+    this.orderJustPlaced = true;
+    console.log("Model: Order placed", newOrder);
+    return true;
+  }
+
+  resetOrderPlacedStatus() {
+    this.orderJustPlaced = false;
   }
 
   // Add more methods here as needed for:

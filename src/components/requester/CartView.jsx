@@ -1,4 +1,4 @@
-const CartView = ({ items = [], onRemoveFromCart }) => {
+const CartView = ({ items = [], onRemoveFromCart, onPlaceOrder }) => {
   // Calculate total using rawPrice
   const total = items.reduce((sum, item) => sum + item.rawPrice, 0);
 
@@ -38,7 +38,14 @@ const CartView = ({ items = [], onRemoveFromCart }) => {
         ))}
       </ul>
       <div className="pt-4 border-t border-gray-200">
-        <p className="text-lg font-semibold">Total: SEK {total.toFixed(2)}</p>
+        <p className="text-lg font-semibold mb-4">Total: SEK {total.toFixed(2)}</p>
+        <button
+          onClick={() => onPlaceOrder()}
+          disabled={!items.length} // Disable if cart is empty
+          className={`w-full bg-green-600 text-white px-6 py-3 rounded-md font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors ${!items.length ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          Place Order
+        </button>
       </div>
     </div>
   );

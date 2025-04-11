@@ -11,6 +11,9 @@ const CartPresenter = observer(() => {
         onRemoveFromCart={(item) => {
           myQuicaModel.removeFromCart(item);
         }}
+        onPlaceOrder={() => {
+          myQuicaModel.placeOrder();
+        }}
       />
     </div>
   );
