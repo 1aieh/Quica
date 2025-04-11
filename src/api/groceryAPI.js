@@ -1,56 +1,50 @@
-const RAPID_API_KEY = 'df9851bcbcmshc2e1de437baee8ap11833cjsn334280e702d7';
-const RAPID_API_HOST = 'api-to-find-grocery-prices.p.rapidapi.com';
+const SPOONACULAR_API_KEY = 'd46177aae0fb4dcd86559493cc3054d7';
 
-export async function fetchWalmartGroceries(query) {
+/**
+ * Generate a random integer between min and max (inclusive)
+ */
+const getRandomPrice = (min, max) => {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+export async function searchSpoonacularProducts(query, number = 10) {
   try {
-    console.log('Fetching groceries with query:', query);
+    console.log('Fetching products with query:', query);
 
-    const url = `https://api-to-find-grocery-prices.p.rapidapi.com/walmart?query=${encodeURIComponent(query)}&page=1`;
-    const options = {
-      method: 'GET',
-      headers: {
-        'x-rapidapi-key': RAPID_API_KEY,
-        'x-rapidapi-host': RAPID_API_HOST,
-        'accept': 'application/json'
-      }
-    };
+    const url = new URL('https://api.spoonacular.com/food/products/search');
+    url.searchParams.append('apiKey', SPOONACULAR_API_KEY);
+    url.searchParams.append('query', query);
+    url.searchParams.append('number', number.toString());
 
-    const response = await fetch(url, options);
+    const response = await fetch(url);
     
-    // Check HTTP status
     if (!response.ok) {
       console.error(`API request failed with status: ${response.status}`);
       return [];
     }
 
-    const result = await response.text();
-    console.log('Raw API Response:', result);
+    const data = await response.json();
+    console.log('API Response:', data);
 
-    // Parse the text response to JSON
-    const data = JSON.parse(result);
-    console.log('Parsed API Response:', data);
-
-    // Handle API error response gracefully
-    if (data.success === false) {
-      console.warn('API returned error:', data.message);
-      return []; // Return empty array instead of throwing error
+    if (!data.products || !Array.isArray(data.products)) {
+      console.warn('No products found in response');
+      return [];
     }
 
-    // Format the response data if it's an array
-    if (Array.isArray(data)) {
-      return data.map(item => ({
-        id: item.position?.toString() || Math.random().toString(),
+    // Map the products to our application's format
+    return data.products.map(item => {
+      const rawPrice = getRandomPrice(10, 100);
+      return {
+        id: item.id.toString(),
         name: item.title,
-        image: item.image,
-        price: item.price?.currentPrice,
-        rawPrice: parseFloat(item.price?.rawPrice),
-      }));
-    }
+        image: `https://img.spoonacular.com/products/${item.id}-312x231.${item.imageType}`,
+        price: `SEK ${rawPrice}`,
+        rawPrice: rawPrice
+      };
+    });
 
-    console.error('Unexpected API response format:', data);
-    return []; // Return empty array for unexpected format too
   } catch (error) {
-    console.error('Error fetching Walmart groceries:', error);
-    return []; // Return empty array for any errors
+    console.error('Error fetching products:', error);
+    return [];
   }
 }

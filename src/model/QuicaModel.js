@@ -1,5 +1,5 @@
 import { makeAutoObservable } from "mobx";
-import { fetchWalmartGroceries } from "../api/groceryAPI";
+import { searchSpoonacularProducts } from "../api/groceryAPI";
 
 class QuicaModelClass {
   //state
@@ -97,7 +97,7 @@ class QuicaModelClass {
     this.setError(null);
     
     try {
-      const items = await fetchWalmartGroceries(query);
+      const items = await searchSpoonacularProducts(query);
       this.setGroceryItems(items);
     } catch (error) {
       this.setError(error.message || 'Failed to load grocery items');

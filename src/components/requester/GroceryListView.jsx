@@ -12,11 +12,20 @@ const GroceryListView = ({ items = [], onAddToCart }) => {
             key={item.id}
             className="py-4 flex items-center justify-between"
           >
-            <div>
-              <h3 className="text-lg font-medium text-gray-900">{item.name}</h3>
-              {item.price && (
-                <p className="text-sm text-gray-500">SEK {item.price.toFixed(2)}</p>
+            <div className="flex items-center">
+              {item.image && (
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  className="w-24 h-24 object-cover rounded-md mr-4"
+                />
               )}
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">{item.name}</h3>
+                {item.price && (
+                  <p className="text-sm text-gray-500">{item.price}</p>
+                )}
+              </div>
             </div>
             <button
               onClick={() => onAddToCart(item)}

@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 const GroceryListPresenter = observer(() => {
   useEffect(() => {
     if (myQuicaModel.groceryItems.length === 0 && myQuicaModel.user) {
-      myQuicaModel.loadGroceryItems('vegetables');  // Using example query from API docs
+      myQuicaModel.loadGroceryItems('pizza');  // Using example query from Spoonacular docs
     }
   }, [myQuicaModel.user]);
 
