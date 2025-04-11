@@ -6,7 +6,12 @@ import { myQuicaModel } from '../model/QuicaModel.js';
 const CartPresenter = observer(() => {
   return (
     <div>
-      <CartView cartItems={myQuicaModel.cart} />
+      <CartView 
+        items={myQuicaModel.cart}
+        onRemoveFromCart={(item) => {
+          myQuicaModel.removeFromCart(item);
+        }}
+      />
     </div>
   );
 });

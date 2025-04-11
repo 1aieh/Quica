@@ -65,6 +65,11 @@ class QuicaModelClass {
     console.log("Model: Item added to cart", item);
   }
 
+  removeFromCart(itemToRemove) {
+    this.cart = this.cart.filter(item => item.id !== itemToRemove.id);
+    console.log("Model: Item removed from cart", itemToRemove);
+  }
+
   // Utility Actions
   setLoading(isLoading) {
     this.isLoading = isLoading;

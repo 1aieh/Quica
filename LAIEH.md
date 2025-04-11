@@ -42,6 +42,16 @@
 - Frontend cart state management (add, display, clear) is working via MobX.
 - Basic MVP structure (Model-Presenter-View separation) is in place.
 - Logging helps trace state flow.
+- Spoonacular API integration completed with:
+  - Product search with image loading
+  - Random price generation in SEK
+  - Smart image loading with priority sorting
+  - Proper error handling and empty states
+- Cart functionality enhanced with:
+  - Remove items feature
+  - Total calculation
+  - Proper price formatting
+  - Image display for items
 
 ### Pending Items & Immediate Goals for Peer Review:
 
@@ -80,11 +90,11 @@
 
 **From Bhavya (Status):**
 - ✅ `firebaseConfig.js` - Received and integrated
-- ✅ `QuicaModel.js` - Base implementation received, `addToCart` working.
+- ✅ `QuicaModel.js` - Base implementation received, `addToCart` and `removeFromCart` working
 - ✅ Firebase Auth - Configured and working
 - ✅ User Profile Persistence - Verified working (loads data into model)
-- ⏳ `groceryAPI.js` (**Simple Grocery API**) - **Pending**
-- ⏳ `loadGroceryItems` implementation - **Pending**
+- ✅ `groceryAPI.js` - Completed with Spoonacular API integration
+- ✅ `loadGroceryItems` implementation - Working with new API
 
 ### Key Learnings & Notes:
 
