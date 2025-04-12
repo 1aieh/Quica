@@ -141,6 +141,12 @@ class QuicaModelClass {
     console.log("Model: Item removed from cart", itemToRemove);
   }
 
+  // Computed property to find the first active order for the requester
+  get activeRequesterOrder() {
+    const activeStatuses = ['Unassigned', 'Assigned', 'PickedUp']; // Statuses indicating an ongoing order for the banner
+    return this.requesterOrders.find(order => activeStatuses.includes(order.status)) || null;
+  }
+
   getCartTotal() {
     const itemSubtotal = this.cart.reduce((sum, item) => {
       return sum + (item.rawPrice * (item.quantity || 1));

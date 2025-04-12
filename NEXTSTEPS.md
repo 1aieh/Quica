@@ -2,208 +2,129 @@
 
 *   **App:** Quica (Grocery delivery, Requester/Deliverer roles)
 *   **Tech:** React, Vite, MobX (`myQuicaModel`), Firebase (Auth - Google, Firestore)
-*   **API:** Spoonacular API (for item names/images), **Simulated Prices** needed.
+*   **API:** Spoonacular API (for item names/images), **Simulated Prices** needed. **(Currently experiencing 402 errors - likely quota exceeded)**
 *   **Structure:** MVP (Model-View-Presenter)
 *   **Verified Working:**
     *   Google Auth (Login/Logout).
     *   User profile data loads into `myQuicaModel.userProfile` on login.
     *   `myQuicaModel.cart` updates correctly when items added.
     *   Basic transition to static "Order Placed" screen works.
-    *   First-time user profile setup with role selection, address, and phone input.
-*   **User Object:** Contains `uid`, `email`, `displayName`, `role` ('requester' initially), `delivererStatus` (null initially), `address`, `phone`, etc.
-*   **Order Object:** Will contain requester/deliverer info, items, totals, status ('Unassigned' -> 'Assigned' etc.), timestamps.
+    *   First-time user profile setup with role selection ('requester'/'both'), address, and phone input.
+    *   Order placement persists order to Firestore with 'Unassigned' status.
+    *   Requester order tracking screen displays basic status updates ('Unassigned', 'Assigned', 'PickedUp').
+    *   Deliverer view allows activating/deactivating delivery mode.
+    *   Deliverers with 'both' role can see available ('Unassigned') orders.
+    *   Deliverers can accept available orders, updating status to 'Assigned' and assigning deliverer info in Firestore.
+    *   Deliverer view separates "Ongoing Deliveries" from "Available Orders".
+    *   Deliverers can mark an 'Assigned' order as 'PickedUp'.
+    *   Top bar displays user name and functional Sign Out button.
+*   **User Object:** Contains `uid`, `email`, `displayName`, `role` ('requester' or 'both'), `delivererStatus` ('active'/'inactive'/null), `address`, `phone`, etc.
+*   **Order Object:** Contains requester/deliverer info, items, totals, status ('Unassigned' -> 'Assigned' -> 'PickedUp' etc.), timestamps (`createdAt`, `updatedAt`, `assignedAt`, `pickedUpAt`, etc.).
 
-## 2. Goals for Next Session (Targeting Peer Review)
+## 2. Original Goals (Recap)
 
-1.  **Complete User Profile Setup:** Implement the "Tell us about yourself" screen.
-2.  **Enhance Home Screen:** Add top bar widgets, Order/Deliver toggle, basic Deliver view.
-3.  **Implement Order Creation:** Persist orders to Firestore when "Place Order" is clicked.
-4.  **Implement Dynamic Order Status:** Make the Requester's order screen react to status changes in Firestore.
-5.  **Improve Item Display:** Style grocery items as vertical cards.
+1.  **Complete User Profile Setup:** ✅
+2.  **Enhance Home Screen:** ✅ (Basic structure, TopBar widgets)
+3.  **Implement Order Creation:** ✅
+4.  **Implement Dynamic Order Status:** ✅ (Basic tracking implemented)
+5.  **Improve Item Display:** ✅
 
-## 3. Detailed Next Steps & Implementation Blocks
+## 3. Detailed Implementation Blocks & Status
 
 ---
 
 ### **Block 1: First-Time User Profile Setup Screen** ✅
 
-*   **Goal:** Collect Role Preference, Address, Phone after first sign-up and update Firestore.
-*   **Status:** Completed and Verified Working
-*   **Implementation Details:**
-    *   Added `isProfileSetupComplete` state and actions to `QuicaModel`.
-    *   Created `ProfileSetupView` with role selection (Ordering Only/Both), address, and phone inputs.
-    *   Implemented `updateUserProfile` in persistence layer with Firestore integration.
-    *   Created `ProfileSetupPresenter` to handle form submission and user profile updates.
-    *   Updated `App.jsx` to conditionally render profile setup for new users.
-    *   Data is properly persisted to Firestore with automatic profile completion tracking.
-
-    1.  **Modify Model (`QuicaModel.js`):**
-        *   Add a state property like `isProfileSetupComplete = false`. Initialize it based on loaded `userProfile` data (check if `address` or `phone` is filled, or use a dedicated `profileComplete` flag loaded from Firestore).
-        *   Add an action `setProfileSetupComplete(isComplete)`.
-    2.  **Create UI Component (`ProfileSetupView.jsx`):**
-        *   Build the view: H1 "Tell us about yourself", "I'm interested in..." heading, two clickable "cards" (Ordering [default selected], Delivering) with subtitles, Address input, Phone input, "Save Profile" button.
-        *   Use local `useState` to manage the input values and the selected role preference ('orderOnly' or 'deliverToo').
-    3.  **Create Persistence Function (`persistence.js`):**
-        *   Add an exported async function `updateUserProfile(userId, dataToUpdate)`. Use `updateDoc` to update the `/users/{userId}` document in Firestore. Handle errors.
-    4.  **Create Presenter (`ProfileSetupPresenter.jsx`):**
-        *   Wrap with `observer`, import `myQuicaModel`, `ProfileSetupView`, `updateUserProfile`.
-        *   Manage local state from the view inputs/selections.
-        *   Implement `handleSaveProfile`:
-            *   Determine `role` ('requester' or 'both') and `delivererStatus` ('inactive' or null) based on selection.
-            *   Get `address` and `phone` from state.
-            *   Create `updateData = { role, delivererStatus, address, phone, profileComplete: true }`.
-            *   Call `await updateUserProfile(myQuicaModel.user.uid, updateData)`.
-            *   On success, call `myQuicaModel.setProfileSetupComplete(true)` (or update the local userProfile in the model). Handle errors.
-        *   Render `<ProfileSetupView />` with necessary props/handlers.
-    5.  **Integrate into App Logic (`App.jsx` or similar):**
-        *   Wrap `App.jsx` with `observer`.
-        *   Conditionally render based on `myQuicaModel.user` and `myQuicaModel.isProfileSetupComplete`.
-        *   If logged in but profile *not* complete -> Render `<ProfileSetupPresenter />`.
-        *   If logged in and profile *is* complete -> Render main app view (Block 2).
+*   **Goal:** Collect Role Preference ('requester'/'both'), Address, Phone after first sign-up and update Firestore.
+*   **Status:** Completed and Verified Working.
 
 ---
 
 ### **Block 2: Home Screen Enhancements & Layout** ✅
 
-*   **Goal:** Structure the main logged-in view with a top bar, Order/Deliver toggle, and basic Deliver area.
-*   **Status:** Completed and Verified Working
-*   **Implementation Details:**
-    *   Added `viewMode` state ('order'/'deliver') and `setViewMode` action to `QuicaModel`.
-    *   Created `TopBar.jsx` component displaying user address and providing Order/Deliver toggle buttons.
-    *   Created `DeliverViewPlaceholder.jsx` as a static placeholder for the delivery interface.
-    *   Created `HomePage.jsx` presenter to manage the main view after login.
-    *   `HomePage.jsx` now renders `TopBar` and conditionally displays either the `GroceryListPresenter`/`CartPresenter` (for 'order' mode) or `DeliverViewPlaceholder` (for 'deliver' mode).
-    *   Updated `App.jsx` to render `HomePage` when the user is logged in and profile setup is complete.
-    *   Mode switching is functional via the `TopBar` buttons.
-
-    1.  **Modify Model (`QuicaModel.js`):**
-        *   Add state property `viewMode = 'order'`.
-        *   Add action `setViewMode(mode)`.
-    2.  **Create UI Component (`TopBar.jsx`):**
-        *   Build the component with 3 sections (Left: Address Widget, Middle: Order/Deliver Segmented Button, Right: Placeholder).
-        *   Address Widget: Takes `address` prop, displays "Delivering At" + address.
-        *   Segmented Button: Takes `currentMode` and `onModeChange` props. Highlights active button, calls `onModeChange('order')` or `onModeChange('deliver')`.
-    3.  **Create UI Component (`DeliverViewPlaceholder.jsx`):**
-        *   Build a simple static view for now: "Activate Delivery Mode" toggle/button (non-functional initially), "Your Deliveries" heading, "Available Orders" heading.
-    4.  **Create Container/Presenter (`HomePage.jsx` - Replaces direct rendering in App):**
-        *   Wrap with `observer`. Import `myQuicaModel`, `TopBar`, `GroceryListPresenter`, `DeliverViewPlaceholder`.
-        *   Read `myQuicaModel.viewMode`, `myQuicaModel.userProfile.address`.
-        *   Define `handleModeChange = (mode) => myQuicaModel.setViewMode(mode)`.
-        *   Render `<TopBar address={...} currentMode={...} onModeChange={handleModeChange} />`.
-        *   Conditionally render `<GroceryListPresenter />` if `viewMode === 'order'`.
-        *   Conditionally render `<DeliverViewPlaceholder />` if `viewMode === 'deliver'`.
-    5.  **Update `App.jsx`:**
-        *   When user is logged in and profile is complete, render `<HomePage />`.
+*   **Goal:** Structure the main logged-in view with a top bar, Order/Deliver toggle, and basic Deliver area placeholder.
+*   **Status:** Completed and Verified Working. (Placeholder replaced in Block 6).
 
 ---
 
 ### **Block 3: Item Display & Layout Improvements** ✅
 
-*   **Goal:** Improve item display, fix image handling, and optimize layout.
-*   **Status:** Completed and Verified Working
-*   **Implementation Details:**
-    *   Created reusable `ImagePlaceholder` component with SVG icon for failed/missing images.
-    *   Fixed price handling by returning raw numeric values from API and adding proper formatting in views.
-    *   Improved image loading states with proper error handling and smooth transitions.
-    *   Optimized layout with reduced horizontal padding and proper container widths.
-    *   Added consistent placeholder images across both grocery list and cart views.
-
-    1.  **Create Common Component (`ImagePlaceholder.jsx`):**
-        *   Implemented reusable placeholder with configurable size.
-        *   Added SVG photo icon for visual clarity.
-        *   Used consistent styling with rounded corners and gray background.
-
-    2.  **Update API & Price Handling:**
-        *   Modified Spoonacular API wrapper to return raw numeric prices.
-        *   Implemented consistent price formatting across components.
-        *   Fixed cart calculations to use proper numeric values.
-
-    3.  **Improve Image Handling:**
-        *   Added proper loading states for images.
-        *   Implemented smooth transitions between states.
-        *   Added reliable fallback to placeholder on error.
-
-    4.  **Layout Optimization:**
-        *   Reduced horizontal padding in main container.
-        *   Removed redundant backgrounds.
-        *   Improved grid layout for better space utilization.
+*   **Goal:** Improve item display (cards), fix image handling, and optimize layout.
+*   **Status:** Completed and Verified Working.
 
 ---
 
 ### **Block 4: Order Placement & Backend Logic** ✅
 
-*   **Goal:** When "Place Order" is clicked, create the Order document in Firestore.
-*   **Status:** Completed and Verified Working
+*   **Goal:** When "Place Order" is clicked, create the Order document in Firestore with 'Unassigned' status.
+*   **Status:** Completed and Verified Working.
+
+---
+
+### **Block 5: Dynamic Order Status Tracking (Requester UI - Initial)** ✅
+
+*   **Goal:** Show real-time order status updates on the screen after placing an order. Implement basic tracking presenter and view.
+*   **Status:** Completed and Verified Working (Further updates in Block 8).
 *   **Implementation Details:**
-    *   Added `orderJustPlacedId` state to track newly created orders in `QuicaModel`.
-    *   Modified `placeOrder` to store the order ID returned from Firestore.
-    *   Implemented error display in CartView with red styling.
-    *   Updated CartPresenter to pass error messages from model to view.
-    *   Ensured proper cleanup of order-related state in `clearUserData` and `resetOrderPlacedStatus`.
-    *   Removed redundant 'pending' status, letting persistence layer set 'Unassigned'.
-
-    1.  **Modify Model (`QuicaModel.js`):**
-        *   Add state `orderInProgress = false` (or use `isLoading`).
-        *   Add state `orderError = null`.
-        *   Add state `orderJustPlacedId = null` (to store ID of newly created order).
-        *   Add action `setOrderJustPlacedId(orderId)`.
-        *   Add action `clearCart() { this.cart = []; }`.
-        *   Create `async placeOrder()` action:
-            *   Set `orderInProgress = true`, `orderError = null`.
-            *   Get required data: `cart = this.cart`, `userProfile = this.userProfile`, `userId = this.user.uid`.
-            *   Calculate `itemSubtotal` and `totalPrice` (subtotal + deliveryFee). **Ensure items in cart have simulated prices.**
-            *   Construct the `orderData` object matching your target Firestore structure (status 'Unassigned', include items, totals, requester info, null fields for deliverer, timestamps).
-            *   `try...catch` block:
-                *   Call `const orderId = await createOrder(orderData);` (**Needs persistence function**).
-                *   Call `this.setOrderJustPlacedId(orderId)`.
-                *   Call `this.clearCart()`.
-            *   Handle errors in `catch`, set `orderError`.
-            *   Set `orderInProgress = false` in `finally`.
-    2.  **Create Persistence Function (`persistence.js`):**
-        *   Add exported async function `createOrder(orderData)`.
-        *   Use `addDoc(collection(db, "orders"), orderData)` to add the order to Firestore.
-        *   Return the new document's ID (`newDocRef.id`). Handle errors.
-    3.  **Update UI/Presenter (Cart View/Presenter):**
-        *   Add a "Place Order" button if not already present.
-        *   Disable button if `myQuicaModel.orderInProgress` is true.
-        *   Connect the button's `onClick` to call `myQuicaModel.placeOrder()`.
-        *   Display `myQuicaModel.orderError` if it exists.
+    *   Added `currentlyTrackedOrder` state and related actions/listeners in Model/Persistence.
+    *   Created `OrderTrackingPresenter` and `OrderTrackingView`.
+    *   Integrated into App logic to show tracking screen for active orders.
 
 ---
 
-### **Block 5: Dynamic Order Status Tracking (Requester UI)**
+### **Block 6: Deliverer View & Order Acceptance** ✅
 
-*   **Goal:** Show real-time order status updates on the screen after placing an order.
-
-    1.  **Modify Model (`QuicaModel.js`):**
-        *   Add state `currentlyTrackedOrder = null`.
-        *   Add action `setCurrentlyTrackedOrder(orderData)`.
-        *   Modify `clearUserData` to also set `currentlyTrackedOrder = null`, `orderJustPlacedId = null`.
-    2.  **Modify Persistence Logic (`persistence.js`):**
-        *   Need a mechanism to **start listening** to the specific order document *after* it's placed.
-        *   Modify `onAuthStateChanged` or create a new function: When a user logs in, check if `myQuicaModel.orderJustPlacedId` has a value (maybe store this ID in the user profile too?). If so, set up the listener.
-        *   Alternatively, trigger listener setup from the model after `placeOrder` succeeds.
-        *   The listener function (`setupOrderListener(orderId)`):
-            *   Stores the unsubscribe function returned by `onSnapshot`.
-            *   Uses `onSnapshot(doc(db, "orders", orderId), (docSnap) => { ... })`.
-            *   Inside the callback: if `docSnap.exists()`, call `myQuicaModel.setCurrentlyTrackedOrder({ id: docSnap.id, ...docSnap.data() })`. Handle errors/doc deletion.
-        *   Ensure listener is **unsubscribed** (`unsubscribe()`) on logout, or when the order reaches a final state (Delivered/Cancelled), or when navigating away.
-    3.  **Create Presenter (`OrderTrackingPresenter.jsx`):**
-        *   Wrap with `observer`. Import `myQuicaModel`.
-        *   Read `myQuicaModel.currentlyTrackedOrder`.
-        *   If `!currentlyTrackedOrder`, show loading or "No active order".
-        *   Conditionally render based on `currentlyTrackedOrder.status`:
-            *   `'Unassigned'`: "Order placed successfully! Finding rider..."
-            *   `'Assigned'`: "Rider found! {currentlyTrackedOrder.delivererName || 'Your rider'} is picking up your order."
-            *   Add other statuses ('PickedUp', 'Delivered', 'Cancelled') later.
-    4.  **Integrate into App Logic (`App.jsx` / `HomePage.jsx`):**
-        *   Modify the main view logic. If `myQuicaModel.orderJustPlacedId` is set OR `myQuicaModel.currentlyTrackedOrder` exists and has a non-final status, render `<OrderTrackingPresenter />` instead of the Order/Deliver views.
+*   **Goal:** Implement the Deliverer view, allowing activation, viewing available orders, and accepting them.
+*   **Status:** Completed and Verified Working.
+*   **Implementation Details:**
+    *   Added deliverer-specific state/actions (`acceptingOrderId`, `acceptOrderError`, `toggleDelivererStatus`, `acceptOrder`) to `QuicaModel`.
+    *   Added `assignOrderToDeliverer` persistence function.
+    *   Created `DelivererView`, `AvailableOrderCard`, and `DelivererPresenter`.
+    *   Corrected listener logic in `persistence.js` to handle the "both" role correctly for activating available/assigned order listeners.
+    *   Integrated `DelivererPresenter` into `HomePage`.
+    *   Added defensive check in `AvailableOrderCard` for missing `requesterAddress`.
 
 ---
 
-**Key Considerations:**
+### **Block 7: Top Bar User Profile & Sign Out** ✅
 
-*   **Price Simulation:** Ensure prices are added correctly when fetching from Spoonacular in `groceryAPI.js` or `loadGroceryItems`. These prices are needed for `placeOrder`.
-*   **Error Handling:** Add user-facing error messages for API calls, Firestore writes, etc.
-*   **State Management:** Decide carefully where state belongs (local component state vs. global MobX model state). Use MobX for shared state needed across different presenters/views.
-*   **Real-time Listeners:** Be mindful of starting/stopping Firestore listeners correctly to avoid leaks and unnecessary reads.
+*   **Goal:** Add user name display and sign-out functionality to the top bar.
+*   **Status:** Completed and Verified Working.
+*   **Implementation Details:**
+    *   Created `UserProfileWidget` component.
+    *   Integrated widget into `TopBar`, passing `userName` and `onSignOut` props.
+    *   Added sign-out logic (calling Firebase `signOut`) to `HomePage` presenter.
+
+---
+
+### **Block 8: Deliverer Status Update (Picked Up)** ✅
+
+*   **Goal:** Allow deliverers to mark assigned orders as 'PickedUp', updating Firestore and the requester's view.
+*   **Status:** Completed and Verified Working.
+*   **Implementation Details:**
+    *   Modified `updateOrderStatus` in persistence to add `pickedUpAt` timestamp.
+    *   Added state/action (`updatingOrderStatusId`, `updateOrderStatusError`, `updateDelivererOrderStatus`) to `QuicaModel`.
+    *   Created `OngoingOrderCard` component to display assigned orders.
+    *   Updated `DelivererView` to show separate "Ongoing Deliveries" list using `OngoingOrderCard` and pass status update props.
+    *   Updated `DelivererPresenter` to handle status updates.
+    *   Updated `OngoingOrderCard` with "Items Picked Up" button logic (visible when status is 'Assigned').
+    *   Updated requester's `OrderTrackingView` to display specific message ("Your order has been picked up!") and ETA ("~5 minutes") when status is 'PickedUp'.
+
+---
+
+## 4. Remaining Steps & Considerations
+
+*   **Deliverer Order Status Updates (Post-Pickup):**
+    *   Implement UI buttons/actions in `OngoingOrderCard` for subsequent statuses (e.g., "Start Delivering", "Arrived", "Confirm Delivery").
+    *   Update `updateOrderStatus` in persistence to handle these statuses and add relevant timestamps (e.g., `deliveredAt`).
+    *   Update `QuicaModel` actions if needed.
+*   **Requester Order Tracking UI:**
+    *   Enhance `OrderTrackingView` to display appropriate messages/UI for 'Delivering' and 'Delivered' statuses.
+    *   Consider adding more dynamic ETA or map view (stretch goal).
+*   **API Key / Grocery Loading:**
+    *   **Resolve 402 Error:** Address the Spoonacular API quota issue (wait, new key, or implement environment variables for the key).
+    *   **Price Simulation:** Ensure a reliable way to add prices to items fetched from the API *before* they are added to the cart, as prices are needed for `placeOrder`. Currently, prices might be missing.
+*   **Error Handling:** Improve user-facing feedback for errors (e.g., failed order placement, failed status updates, API errors) beyond console logs. Use the `errorMessage`, `orderError`, `acceptOrderError`, etc., states in the model more effectively in the UI.
+*   **Firestore Security Rules:** Implement rules to ensure users can only read/write data according to their roles and ownership (e.g., requesters see own orders, deliverers see available/assigned orders, users can only update their own profile).
+*   **Testing & Refinement:** Thoroughly test all user flows for both roles. Refine UI/UX based on testing.
+*   **Styling:** Continue refining component styling for consistency and usability.
