@@ -8,7 +8,8 @@ const CartView = ({
   isLoading,
   subtotal,
   total,
-  deliveryFee
+  deliveryFee,
+  error
 }) => {
   if (isLoading) {
     return <div className="text-center">Placing order...</div>;
@@ -61,6 +62,11 @@ const CartView = ({
           </li>
         ))}
       </ul>
+      {error && (
+        <div className="p-4 text-red-600 bg-red-50 rounded-md mb-4">
+          {error}
+        </div>
+      )}
       <div className="pt-4 border-t border-gray-200">
         <div className="flex flex-col space-y-2 mb-4">
           <div className="flex justify-between text-sm text-gray-600">

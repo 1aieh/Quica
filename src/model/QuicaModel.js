@@ -15,6 +15,7 @@ class QuicaModelClass {
   cart = []; // Array of items in the current cart
   requesterOrders = []; // Array of orders placed by the current user
   orderJustPlaced = false; // Flag to track if an order was just placed
+  orderJustPlacedId = null; // ID of the newly placed order, used for tracking
   viewMode = 'order'; // Current view mode ('order' or 'deliver')
 
   availableOrders = []; // Array of orders available for pickup
@@ -161,6 +162,7 @@ class QuicaModelClass {
     this.delivererOrders = [];
     this.errorMessage = null;
     this.orderJustPlaced = false;
+    this.orderJustPlacedId = null;
   }
 
   placeOrder() {
@@ -223,8 +225,6 @@ class QuicaModelClass {
     itemSubtotal: Number(itemSubtotal.toFixed(2)), // Round to 2 decimal places and ensure it's a number
     deliveryFee: Number(deliveryFee.toFixed(2)),
     totalPrice: Number(totalPrice.toFixed(2)),
-    status: 'pending', // Initial status
-
     // Add timestamps
     createdAt: new Date(),
     updatedAt: new Date()
@@ -244,6 +244,7 @@ class QuicaModelClass {
         console.log("Model: Order successfully placed in Firestore, ID:", result.orderId);
         this.cart = []; // Clear the cart ONLY on successful placement
         this.orderJustPlaced = true; // Set flag for UI transition
+        this.orderJustPlacedId = result.orderId; // Store the new order ID
         // No need to update this.requesterOrders here, the listener will do it.
       } else {
         // Error is already set in persistence function
@@ -265,6 +266,7 @@ class QuicaModelClass {
 
   resetOrderPlacedStatus() {
     this.orderJustPlaced = false;
+    this.orderJustPlacedId = null;
   }
 
   setViewMode(mode) {

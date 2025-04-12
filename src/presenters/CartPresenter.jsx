@@ -20,6 +20,7 @@ const CartPresenter = observer(() => {
         subtotal={myQuicaModel.getCartSubtotal()}
         total={myQuicaModel.getCartTotal()}
         deliveryFee={myQuicaModel.constructor.DELIVERY_FEE}
+        error={myQuicaModel.errorMessage}
       />
     </div>
   );

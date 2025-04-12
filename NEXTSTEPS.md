@@ -97,27 +97,50 @@
 
 ---
 
-### **Block 3: Item Display Styling**
+### **Block 3: Item Display & Layout Improvements** ✅
 
-*   **Goal:** Display grocery items from Spoonacular as vertical cards.
+*   **Goal:** Improve item display, fix image handling, and optimize layout.
+*   **Status:** Completed and Verified Working
+*   **Implementation Details:**
+    *   Created reusable `ImagePlaceholder` component with SVG icon for failed/missing images.
+    *   Fixed price handling by returning raw numeric values from API and adding proper formatting in views.
+    *   Improved image loading states with proper error handling and smooth transitions.
+    *   Optimized layout with reduced horizontal padding and proper container widths.
+    *   Added consistent placeholder images across both grocery list and cart views.
 
-    1.  **Create UI Component (`GroceryItemCard.jsx`):**
-        *   Takes `item` and `onAddToCart` props.
-        *   Use Tailwind CSS. Structure:
-            *   Outer card `div`.
-            *   `<img>` tag for `item.imageUrl` (check if it exists).
-            *   `div` for `item.name`.
-            *   `div` for `item.price` (remember this is simulated!).
-            *   "Add to Cart" button calling `onAddToCart(item)`.
-    2.  **Update UI Component (`GroceryListView.jsx`):**
-        *   Modify the rendering logic. Instead of `<li>`, map `items` to render `<GroceryItemCard item={item} onAddToCart={onAddToCart} />`.
-        *   Use Flexbox (`flex flex-wrap`) or Grid (`grid grid-cols-..`) to arrange the cards nicely.
+    1.  **Create Common Component (`ImagePlaceholder.jsx`):**
+        *   Implemented reusable placeholder with configurable size.
+        *   Added SVG photo icon for visual clarity.
+        *   Used consistent styling with rounded corners and gray background.
+
+    2.  **Update API & Price Handling:**
+        *   Modified Spoonacular API wrapper to return raw numeric prices.
+        *   Implemented consistent price formatting across components.
+        *   Fixed cart calculations to use proper numeric values.
+
+    3.  **Improve Image Handling:**
+        *   Added proper loading states for images.
+        *   Implemented smooth transitions between states.
+        *   Added reliable fallback to placeholder on error.
+
+    4.  **Layout Optimization:**
+        *   Reduced horizontal padding in main container.
+        *   Removed redundant backgrounds.
+        *   Improved grid layout for better space utilization.
 
 ---
 
-### **Block 4: Order Placement & Backend Logic**
+### **Block 4: Order Placement & Backend Logic** ✅
 
 *   **Goal:** When "Place Order" is clicked, create the Order document in Firestore.
+*   **Status:** Completed and Verified Working
+*   **Implementation Details:**
+    *   Added `orderJustPlacedId` state to track newly created orders in `QuicaModel`.
+    *   Modified `placeOrder` to store the order ID returned from Firestore.
+    *   Implemented error display in CartView with red styling.
+    *   Updated CartPresenter to pass error messages from model to view.
+    *   Ensured proper cleanup of order-related state in `clearUserData` and `resetOrderPlacedStatus`.
+    *   Removed redundant 'pending' status, letting persistence layer set 'Unassigned'.
 
     1.  **Modify Model (`QuicaModel.js`):**
         *   Add state `orderInProgress = false` (or use `isLoading`).
