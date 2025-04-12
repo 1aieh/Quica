@@ -15,6 +15,7 @@ class QuicaModelClass {
   cart = []; // Array of items in the current cart
   requesterOrders = []; // Array of orders placed by the current user
   orderJustPlaced = false; // Flag to track if an order was just placed
+  viewMode = 'order'; // Current view mode ('order' or 'deliver')
 
   availableOrders = []; // Array of orders available for pickup
   delivererOrders = []; // Array of orders currently assigned to the deliverer
@@ -220,6 +221,15 @@ class QuicaModelClass {
 
   resetOrderPlacedStatus() {
     this.orderJustPlaced = false;
+  }
+
+  setViewMode(mode) {
+    if (mode !== 'order' && mode !== 'deliver') {
+      console.error('Invalid view mode:', mode);
+      return;
+    }
+    console.log('Model: Setting view mode to:', mode);
+    this.viewMode = mode;
   }
 
   // Add more methods here as needed for:

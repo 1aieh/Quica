@@ -63,9 +63,18 @@
 
 ---
 
-### **Block 2: Home Screen Enhancements & Layout**
+### **Block 2: Home Screen Enhancements & Layout** ✅
 
 *   **Goal:** Structure the main logged-in view with a top bar, Order/Deliver toggle, and basic Deliver area.
+*   **Status:** Completed and Verified Working
+*   **Implementation Details:**
+    *   Added `viewMode` state ('order'/'deliver') and `setViewMode` action to `QuicaModel`.
+    *   Created `TopBar.jsx` component displaying user address and providing Order/Deliver toggle buttons.
+    *   Created `DeliverViewPlaceholder.jsx` as a static placeholder for the delivery interface.
+    *   Created `HomePage.jsx` presenter to manage the main view after login.
+    *   `HomePage.jsx` now renders `TopBar` and conditionally displays either the `GroceryListPresenter`/`CartPresenter` (for 'order' mode) or `DeliverViewPlaceholder` (for 'deliver' mode).
+    *   Updated `App.jsx` to render `HomePage` when the user is logged in and profile setup is complete.
+    *   Mode switching is functional via the `TopBar` buttons.
 
     1.  **Modify Model (`QuicaModel.js`):**
         *   Add state property `viewMode = 'order'`.
