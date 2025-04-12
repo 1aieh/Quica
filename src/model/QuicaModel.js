@@ -1,7 +1,7 @@
 import { makeAutoObservable } from "mobx";
 import { searchSpoonacularProducts } from "../api/groceryAPI";
 // Import the function to interact with Firestore persistence
-import { placeOrderInFirestore } from "../firebase/persistence.js";
+import { placeOrderInFirestore, updateOrderStatus, updateUserProfile, assignOrderToDeliverer } from "../firebase/persistence.js";
 
 class QuicaModelClass {
   //state
@@ -24,8 +24,11 @@ class QuicaModelClass {
   orderCancellationInProgress = false; // Tracks cancellation action state
   orderCancellationError = null; // Stores cancellation errors
 
+  // Deliverer state
   availableOrders = []; // Array of orders available for pickup
   delivererOrders = []; // Array of orders currently assigned to the deliverer
+  acceptingOrderId = null; // ID of order currently being accepted
+  acceptOrderError = null; // Error message if accepting order fails
 
   constructor() {
     // Initialize user as null (not logged in) instead of undefined
@@ -69,6 +72,7 @@ class QuicaModelClass {
   }
 
   setAvailableOrders(orders) {
+    console.log("DEBUG: setAvailableOrders called with:", orders); // DEBUG LOG
     this.availableOrders = orders;
     console.log("Model: Available orders set", this.availableOrders);
   }
@@ -335,12 +339,57 @@ class QuicaModelClass {
     this.viewMode = mode;
   }
 
-  // Add more methods here as needed for:
-  // - Placing orders
-  // - Accepting orders
-  // - Updating order status
-  // - Removing items from cart
-  // - etc.
+  // Deliverer actions
+  async toggleDelivererStatus() {
+    if (!this.user || !this.userProfile) {
+      this.setError("User not logged in or profile not loaded");
+      return;
+    }
+
+    const newStatus = this.userProfile.delivererStatus === 'active' ? 'inactive' : 'active';
+    try {
+      const result = await updateUserProfile(this.user.uid, { 
+        delivererStatus: newStatus,
+        updatedAt: new Date()
+      });
+      
+      if (!result.success) {
+        this.setError("Failed to update deliverer status");
+      }
+    } catch (error) {
+      this.setError(error.message || "Failed to update deliverer status");
+      console.error("Model: Error updating deliverer status:", error);
+    }
+  }
+
+  async acceptOrder(orderId) {
+    if (!this.user || !this.userProfile) {
+      this.setError("User not logged in or profile not loaded");
+      return;
+    }
+
+    if (this.userProfile.delivererStatus !== 'active') {
+      this.setError("Must be in active delivery mode to accept orders");
+      return;
+    }
+
+    this.acceptingOrderId = orderId;
+    this.acceptOrderError = null;
+
+    try {
+      await assignOrderToDeliverer(orderId, {
+        uid: this.user.uid,
+        displayName: this.userProfile.displayName || this.user.displayName,
+        phone: this.userProfile.phone
+      });
+      // The onSnapshot listener will handle updating the model state
+    } catch (error) {
+      this.acceptOrderError = error.message || "Failed to accept order";
+      console.error("Model: Error accepting order:", error);
+    } finally {
+      this.acceptingOrderId = null;
+    }
+  }
 
   async loadGroceryItems(query = 'vegetables') {
     this.setLoading(true);

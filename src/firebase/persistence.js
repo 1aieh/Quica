@@ -76,12 +76,15 @@ const initializeAuthListener = () => {
       // --- End User Profile ---
 
       // Check for active order if we have the profile
-      if (docSnap.exists()) {
-        const profileData = docSnap.data();
-        if (profileData.role === 'requester') {
-          await checkForActiveOrder(user.uid);
-        }
-      }
+      // Note: This check might run before the profile listener sets the role,
+      // so relying on setupOrderListeners triggered by the profile update is safer.
+      // Consider removing this block or ensuring it runs *after* profile is set.
+      // if (docSnap.exists()) { // docSnap is not available here
+      //   const profileData = myQuicaModel.userProfile; // Use model state if available
+      //   if (profileData && profileData.role === 'requester') {
+      //     await checkForActiveOrder(user.uid);
+      //   }
+      // }
 
     } else {
       // User is signed out
@@ -101,6 +104,7 @@ const initializeAuthListener = () => {
 // Function to set up order listeners based on user role
 const setupOrderListeners = (uid, role) => {
   console.log(`Setting up order listeners for UID: ${uid}, Role: ${role}`);
+  console.log(`DEBUG: setupOrderListeners called with role: ${role}`); // DEBUG LOG
 
   // Clean up previous listeners *again* just in case role changed without logout
   unsubscribeRequesterOrders();
@@ -109,8 +113,8 @@ const setupOrderListeners = (uid, role) => {
 
   const ordersRef = collection(db, "orders");
 
-  if (role === "requester") {
-    // Listener for orders placed BY this user
+  // Listener for orders placed BY this user (requester OR both)
+  if (role === "requester" || role === "both") {
     const q = query(ordersRef, where("requesterUid", "==", uid));
     unsubscribeRequesterOrders = onSnapshot(q, (querySnapshot) => {
       const orders = [];
@@ -123,11 +127,14 @@ const setupOrderListeners = (uid, role) => {
         console.error("Error listening to requester orders:", error);
         myQuicaModel.setError("Failed to load your orders.");
     });
+  }
 
-  } else if (role === "deliverer") {
-    // Listener for AVAILABLE orders (Unassigned)
+  // Listener for AVAILABLE orders (Unassigned) - only if role includes delivery capability
+  if (role === "both") {
+    console.log("DEBUG: Setting up listener for AVAILABLE orders (role=both)"); // DEBUG LOG
     const qAvailable = query(ordersRef, where("status", "==", "Unassigned"));
     unsubscribeAvailableOrders = onSnapshot(qAvailable, (querySnapshot) => {
+      console.log(`DEBUG: Available orders listener fired - count: ${querySnapshot.size}`); // DEBUG LOG
       const orders = [];
       querySnapshot.forEach((doc) => {
         orders.push({ id: doc.id, ...doc.data() });
@@ -140,8 +147,10 @@ const setupOrderListeners = (uid, role) => {
     });
 
     // Listener for orders ASSIGNED TO this deliverer
+    console.log("DEBUG: Setting up listener for ASSIGNED orders (role=both)"); // DEBUG LOG
     const qAssigned = query(ordersRef, where("delivererUid", "==", uid));
      unsubscribeDelivererOrders = onSnapshot(qAssigned, (querySnapshot) => {
+      console.log(`DEBUG: Assigned orders listener fired - count: ${querySnapshot.size}`); // DEBUG LOG
       const orders = [];
       querySnapshot.forEach((doc) => {
         // Filter out potentially cancelled/completed orders if needed based on status
@@ -168,13 +177,13 @@ const checkForActiveOrder = async (userId) => {
   );
 
   try {
-    const querySnapshot = await getDoc(q);
+    const querySnapshot = await getDocs(q); // Use getDocs for potentially multiple results
     if (!querySnapshot.empty) {
       // Get the most recent active order
       const latestOrder = querySnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())[0];
-      
+
       // Setup tracking for this order
       startOrderTracking(latestOrder.id);
     }
@@ -261,10 +270,12 @@ const placeOrderInFirestore = async (orderData) => {
     };
     const docRef = await addDoc(collection(db, "orders"), completeOrderData);
     console.log("Order placed successfully with ID:", docRef.id);
-    
-    // Start tracking the new order
-    startOrderTracking(docRef.id);
-    
+
+    // Start tracking the new order if the user is the requester
+    if (myQuicaModel.user?.uid === orderData.requesterUid) {
+        startOrderTracking(docRef.id);
+    }
+
     return { success: true, orderId: docRef.id };
   } catch (error) {
     console.error("Error placing order in Firestore:", error);
@@ -272,11 +283,6 @@ const placeOrderInFirestore = async (orderData) => {
     return { success: false, error: error };
   }
 };
-
-// TODO: Add functions for deliverer actions:
-// - acceptOrder(orderId, delivererProfile) -> updates order status, delivererUid, delivererName, delivererPhone, assignedAt
-// - updateOrderStatus(orderId, newStatus) -> updates status, relevant timestamp (pickedUpAt, deliveredAt)
-
 
 // Initialize the auth listener immediately when this module loads
 initializeAuthListener();
@@ -300,11 +306,46 @@ const updateUserProfile = async (userId, dataToUpdate) => {
   }
 };
 
+// Function to assign an order to a deliverer
+const assignOrderToDeliverer = async (orderId, deliverer) => {
+  console.log(`Assigning order ${orderId} to deliverer:`, deliverer);
+  try {
+    const orderRef = doc(db, "orders", orderId);
+
+    // First get the current order to verify it's still available
+    const orderSnap = await getDoc(orderRef);
+    if (!orderSnap.exists()) {
+      throw new Error("Order not found");
+    }
+
+    const orderData = orderSnap.data();
+    if (orderData.status !== "Unassigned") {
+      throw new Error("Order is no longer available");
+    }
+
+    const updateData = {
+      status: "Assigned",
+      delivererUid: deliverer.uid,
+      delivererName: deliverer.displayName,
+      delivererPhone: deliverer.phone,
+      assignedAt: Timestamp.now(),
+      updatedAt: Timestamp.now()
+    };
+
+    await updateDoc(orderRef, updateData);
+    return { success: true };
+  } catch (error) {
+    console.error("Error assigning order:", error);
+    throw new Error(error.message || "Failed to assign order");
+  }
+};
+
 // Export functions needed by the Model or Presenters
-export { 
-  auth, 
-  placeOrderInFirestore, 
+export {
+  auth,
+  placeOrderInFirestore,
   updateUserProfile,
   updateOrderStatus,
-  startOrderTracking
+  startOrderTracking,
+  assignOrderToDeliverer
 };

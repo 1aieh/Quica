@@ -1,14 +1,27 @@
 import { observer } from "mobx-react-lite";
 import { myQuicaModel } from "../model/QuicaModel";
+import { signOut } from "firebase/auth";
+import { auth } from "../firebase/persistence";
 import TopBar from "../components/TopBar";
 import GroceryListPresenter from "./GroceryListPresenter";
 import CartPresenter from "./CartPresenter";
-import DeliverViewPlaceholder from "../components/DeliverViewPlaceholder";
+import DelivererPresenter from "./DelivererPresenter";
 import OrderPlacedView from "../components/requester/OrderPlacedView";
 
 const HomePage = observer(() => {
   const handleModeChange = (mode) => {
     myQuicaModel.setViewMode(mode);
+  };
+
+  // Get user display name from model
+  const userName = myQuicaModel.userProfile?.displayName || myQuicaModel.user?.displayName || 'User';
+
+  // Handle sign out
+  const handleSignOut = () => {
+    signOut(auth).catch((error) => {
+      console.error("Sign out error:", error);
+      myQuicaModel.setError("Failed to sign out");
+    });
   };
 
   return (
@@ -17,6 +30,8 @@ const HomePage = observer(() => {
         address={myQuicaModel.userProfile?.address || "No address set"}
         currentMode={myQuicaModel.viewMode}
         onModeChange={handleModeChange}
+        userName={userName}
+        onSignOut={handleSignOut}
       />
       
       <div className="max-w-7xl mx-auto px-2 py-6">
@@ -32,7 +47,7 @@ const HomePage = observer(() => {
             </div>
           </div>
         ) : (
-          <DeliverViewPlaceholder />
+          <DelivererPresenter />
         )}
       </div>
     </div>

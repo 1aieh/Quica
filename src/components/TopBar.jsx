@@ -1,4 +1,6 @@
-const TopBar = ({ address, currentMode, onModeChange }) => {
+import UserProfileWidget from './common/UserProfileWidget';
+
+const TopBar = ({ address, currentMode, onModeChange, userName, onSignOut }) => {
   return (
     <div className="bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -35,8 +37,8 @@ const TopBar = ({ address, currentMode, onModeChange }) => {
             </button>
           </div>
 
-          {/* Right: Placeholder */}
-          <div className="w-[100px]">{/* Placeholder for future content */}</div>
+          {/* Right: User Profile Widget */}
+          <UserProfileWidget userName={userName} onSignOut={onSignOut} />
         </div>
       </div>
     </div>
