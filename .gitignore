@@ -27,6 +27,6 @@ dist-ssr
 .env.*
 !.env.example
 
-CONTEXT.md
-LAIEH.md
-bhavya.md
+# CONTEXT.md
+# LAIEH.md
+# bhavya.md

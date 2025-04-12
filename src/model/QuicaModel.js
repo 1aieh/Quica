@@ -10,6 +10,7 @@ class QuicaModelClass {
   groceryItems = [];
   isLoading = false;
   errorMessage = null;
+  isProfileSetupComplete = false;
 
   cart = []; // Array of items in the current cart
   requesterOrders = []; // Array of orders placed by the current user
@@ -40,6 +41,12 @@ class QuicaModelClass {
       after: profileData
     });
     this.userProfile = profileData;
+    // Update profile completion status based on required fields
+    this.isProfileSetupComplete = !!(profileData?.address && profileData?.phone && profileData?.role);
+  }
+
+  setProfileSetupComplete(isComplete) {
+    this.isProfileSetupComplete = isComplete;
   }
 
   setGroceryItems(items) {
@@ -103,6 +110,7 @@ class QuicaModelClass {
     this.userProfile = null;
     this.groceryItems = [];
     this.cart = [];
+    this.isProfileSetupComplete = false;
     this.requesterOrders = [];
     this.availableOrders = [];
     this.delivererOrders = [];

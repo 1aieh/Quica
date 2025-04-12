@@ -184,6 +184,25 @@ const placeOrderInFirestore = async (orderData) => {
 // Initialize the auth listener immediately when this module loads
 initializeAuthListener();
 
+// Function to update user profile data
+const updateUserProfile = async (userId, dataToUpdate) => {
+  console.log("Updating user profile:", { userId, dataToUpdate });
+  try {
+    const userDocRef = doc(db, "users", userId);
+    const updateData = {
+      ...dataToUpdate,
+      updatedAt: Timestamp.now()
+    };
+    await setDoc(userDocRef, updateData, { merge: true });
+    console.log("User profile updated successfully");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    myQuicaModel.setError("Failed to update profile.");
+    return { success: false, error };
+  }
+};
+
 // Export functions needed by the Model or Presenters
-export { auth, placeOrderInFirestore }; // Export the write function
+export { auth, placeOrderInFirestore, updateUserProfile }; 
 // Export other functions like acceptOrder, updateOrderStatus when implemented

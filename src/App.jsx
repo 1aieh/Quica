@@ -5,12 +5,14 @@ import { auth } from './firebase/persistence.js';
 import AuthPresenter from './presenters/AuthPresenter';
 import GroceryListPresenter from './presenters/GroceryListPresenter';
 import CartPresenter from './presenters/CartPresenter';
-import OrderPlacedView from './components/requester/OrderPlacedView'; // Import the new view
+import OrderPlacedView from './components/requester/OrderPlacedView';
+import ProfileSetupPresenter from './presenters/ProfileSetupPresenter';
 
 const App = observer(() => {
   const user = myQuicaModel.user;
   const userProfile = myQuicaModel.userProfile;
-  const orderJustPlaced = myQuicaModel.orderJustPlaced; // Read the new state
+  const orderJustPlaced = myQuicaModel.orderJustPlaced;
+  const isProfileSetupComplete = myQuicaModel.isProfileSetupComplete;
   const latestOrder = myQuicaModel.requesterOrders.length > 0 
     ? myQuicaModel.requesterOrders[myQuicaModel.requesterOrders.length - 1] 
     : null; // Get the latest order
@@ -29,6 +31,8 @@ const App = observer(() => {
         <div>Loading...</div>
       ) : user === null ? (
         <AuthPresenter />
+      ) : !isProfileSetupComplete ? (
+        <ProfileSetupPresenter />
       ) : (
         <div>
           <div className="mb-8 flex justify-between items-center">
