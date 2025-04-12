@@ -50,6 +50,7 @@ The primary goal of this course project is to practice building **highly-usable,
         *   `user`: Firebase Auth user object (or null/undefined).
         *   `userProfile`: Data loaded from Firestore `users` collection (role, etc.).
         *   `cart`, `requesterOrders`, `availableOrders`, `delivererOrders`: Arrays holding *relevant* data loaded from Firestore.
+        *   `activeRequesterOrder`: Computed property returning the first order with status 'Unassigned', 'Assigned', or 'PickedUp' for banner display.
         *   Loading/error states.
     *   Provides **actions** (methods) to modify state (e.g., `setUser`, `setOrders`, `addToCart`). Actions are called by Presenters or the Persistence layer.
 *   **Views (`src/components/`):**
@@ -103,7 +104,10 @@ The primary goal of this course project is to practice building **highly-usable,
     *   Browses items (potentially from `src/api/`).
     *   Adds items to cart (updates `model.cart`).
     *   Places order -> triggers action that writes a new document to Firestore `orders` collection (status: 'Unassigned', includes cart, user info, address).
-    *   Views order status (Presenter reads `model.requesterOrders`, updated in real-time by `onSnapshot`).
+    *   Views order status:
+        *   A persistent banner (`OngoingOrderBannerView`) appears on the main grocery list page (`GroceryListPresenter`) if an order is 'Unassigned', 'Assigned', or 'PickedUp', showing summary and status ("Finding Rider", "Heading to ICA", "Coming to You"). This uses the `activeRequesterOrder` computed property.
+        *   A dedicated tracking screen (`OrderTrackingPresenter`) might be shown immediately after placing an order or for later statuses.
+        *   Status updates are driven by real-time `onSnapshot` listeners updating `model.requesterOrders`.
 4.  **Deliverer:**
     *   Views available orders (Presenter reads `model.availableOrders`, populated by `onSnapshot` listening for status: 'Unassigned').
     *   Accepts an order -> triggers action that updates the order document in Firestore (sets `rider-id` = current user UID, status = 'Assigned').
@@ -126,7 +130,9 @@ The primary goal of this course project is to practice building **highly-usable,
 *   View cart details (items, total value)
 *   Place order (persisted to Firebase)
 *   View list of own orders (pending, active, completed)
-*   View real-time status updates for active orders
+*   View real-time status updates for active orders:
+    *   Persistent banner on main grocery page for 'Unassigned', 'Assigned', 'PickedUp' statuses.
+    *   Dedicated tracking screen for detailed view/later statuses.
 
 **Deliverer Role:**
 
