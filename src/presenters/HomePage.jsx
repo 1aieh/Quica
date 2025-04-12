@@ -19,7 +19,7 @@ const HomePage = observer(() => {
         onModeChange={handleModeChange}
       />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-2 py-6">
         {myQuicaModel.orderJustPlaced ? (
           <OrderPlacedView order={myQuicaModel.requesterOrders[myQuicaModel.requesterOrders.length - 1]} />
         ) : myQuicaModel.viewMode === 'order' ? (

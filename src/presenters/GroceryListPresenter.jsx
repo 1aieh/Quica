@@ -16,23 +16,13 @@ const GroceryListPresenter = observer(() => {
   };
 
   return (
-    <div>
-      {myQuicaModel.isLoading && <div>Loading...</div>}
-      {myQuicaModel.errorMessage && (
-        <div className="text-red-500">{myQuicaModel.errorMessage}</div>
-      )}
-      {!myQuicaModel.isLoading && !myQuicaModel.errorMessage && (
-        <>
-          {myQuicaModel.groceryItems.length === 0 ? (
-            <div className="text-gray-500 p-4">No grocery items found. Please try again later.</div>
-          ) : (
-            <GroceryListView
-              items={myQuicaModel.groceryItems}
-              onAddToCart={handleAddToCart}
-            />
-          )}
-        </>
-      )}
+    <div className="min-h-[300px]">
+      <GroceryListView
+        items={myQuicaModel.groceryItems}
+        onAddToCart={handleAddToCart}
+        loading={myQuicaModel.isLoading}
+        error={myQuicaModel.errorMessage}
+      />
     </div>
   );
 });

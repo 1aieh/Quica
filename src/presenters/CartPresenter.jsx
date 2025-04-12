@@ -17,6 +17,9 @@ const CartPresenter = observer(() => {
           myQuicaModel.placeOrder();
         }}
         isLoading={isLoading}
+        subtotal={myQuicaModel.getCartSubtotal()}
+        total={myQuicaModel.getCartTotal()}
+        deliveryFee={myQuicaModel.constructor.DELIVERY_FEE}
       />
     </div>
   );

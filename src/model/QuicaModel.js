@@ -71,9 +71,14 @@ class QuicaModelClass {
     console.log("Model: Deliverer orders set", this.delivererOrders);
   }
 
+  // Constants
+  static DELIVERY_FEE = 15;
+
   addToCart(item) {
-    // Check if the item already exists in the cart
     const existingItemIndex = this.cart.findIndex(cartItem => cartItem.id === item.id);
+    // Ensure consistent price handling
+    const price = typeof item.price === 'string' ? parseFloat(item.price) : (item.price || 0);
+    const rawPrice = price;
 
     if (existingItemIndex !== -1) {
       // If item exists, increment its quantity
@@ -81,20 +86,59 @@ class QuicaModelClass {
       const existingItem = updatedCart[existingItemIndex];
       updatedCart[existingItemIndex] = {
         ...existingItem,
-        quantity: (existingItem.quantity || 1) + 1
+        quantity: (existingItem.quantity || 1) + 1,
+        // Keep original rawPrice but ensure price is also set
+        rawPrice: existingItem.rawPrice,
+        price: existingItem.rawPrice // Set price equal to rawPrice for consistency
       };
       this.cart = updatedCart;
     } else {
-      // If item doesn't exist, add it with quantity 1
-      this.cart = [...this.cart, { ...item, quantity: 1 }];
+      // If item doesn't exist, add it with quantity 1 and store consistent prices
+      this.cart = [...this.cart, { 
+        ...item, 
+        quantity: 1,
+        rawPrice,
+        price: rawPrice // Ensure both price and rawPrice are the same
+      }];
     }
 
     console.log("Model: Item added to cart", item);
   }
 
   removeFromCart(itemToRemove) {
-    this.cart = this.cart.filter(item => item.id !== itemToRemove.id);
+    const existingItemIndex = this.cart.findIndex(item => item.id === itemToRemove.id);
+    
+    if (existingItemIndex === -1) return; // Item not in cart
+    
+    const updatedCart = [...this.cart];
+    const existingItem = updatedCart[existingItemIndex];
+    
+    if (existingItem.quantity > 1) {
+      // If quantity > 1, decrement quantity
+      updatedCart[existingItemIndex] = {
+        ...existingItem,
+        quantity: existingItem.quantity - 1
+      };
+      this.cart = updatedCart;
+    } else {
+      // If quantity is 1, remove the item
+      this.cart = this.cart.filter(item => item.id !== itemToRemove.id);
+    }
+    
     console.log("Model: Item removed from cart", itemToRemove);
+  }
+
+  getCartTotal() {
+    const itemSubtotal = this.cart.reduce((sum, item) => {
+      return sum + (item.rawPrice * (item.quantity || 1));
+    }, 0);
+    return Number((itemSubtotal + QuicaModelClass.DELIVERY_FEE).toFixed(2));
+  }
+
+  getCartSubtotal() {
+    return Number(this.cart.reduce((sum, item) => {
+      return sum + (item.rawPrice * (item.quantity || 1));
+    }, 0).toFixed(2));
   }
 
   // Utility Actions

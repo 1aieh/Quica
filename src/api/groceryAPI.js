@@ -38,8 +38,7 @@ export async function searchSpoonacularProducts(query, number = 10) {
         id: item.id.toString(),
         name: item.title,
         image: `https://img.spoonacular.com/products/${item.id}-312x231.${item.imageType}`,
-        price: `SEK ${rawPrice}`,
-        rawPrice: rawPrice
+        price: rawPrice
       };
     });
 
