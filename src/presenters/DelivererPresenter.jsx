@@ -11,8 +11,9 @@ const DelivererPresenter = observer(() => {
     myQuicaModel.acceptOrder(orderId);
   };
 
-  // Log the available orders received from the model
-  console.log("DEBUG: DelivererPresenter - availableOrders:", myQuicaModel.availableOrders);
+  const handleUpdateStatus = (orderId, newStatus) => {
+    myQuicaModel.updateDelivererOrderStatus(orderId, newStatus);
+  };
 
   // Log the available orders received from the model
   console.log("DEBUG: DelivererPresenter - availableOrders:", myQuicaModel.availableOrders);
@@ -27,6 +28,9 @@ const DelivererPresenter = observer(() => {
       onAcceptOrder={handleAcceptOrder}
       acceptingOrderId={myQuicaModel.acceptingOrderId}
       acceptOrderError={myQuicaModel.acceptOrderError}
+      onUpdateStatus={handleUpdateStatus} // Pass handler
+      updatingOrderStatusId={myQuicaModel.updatingOrderStatusId} // Pass state
+      updateOrderStatusError={myQuicaModel.updateOrderStatusError} // Pass state
     />
   );
 });

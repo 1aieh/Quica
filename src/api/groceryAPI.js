@@ -1,4 +1,4 @@
-const SPOONACULAR_API_KEY = 'd46177aae0fb4dcd86559493cc3054d7';
+const SPOONACULAR_API_KEY = 'c0f8ca195b224448bea029fe14984aee';
 
 /**
  * Generate a random integer between min and max (inclusive)

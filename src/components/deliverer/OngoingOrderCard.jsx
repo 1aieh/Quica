@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 
-function OngoingOrderCard({ order, formatPrice }) {
+function OngoingOrderCard({ order, formatPrice, onUpdateStatus, isUpdatingStatus, updateError }) {
   // Basic status display - can be enhanced later
   const getStatusColor = (status) => {
     switch (status) {
@@ -41,15 +41,24 @@ function OngoingOrderCard({ order, formatPrice }) {
             <span className="font-semibold text-lg">{formatPrice(order.totalPrice)}</span>
           </div>
 
-        {/* Action Buttons (Placeholder for future) */}
-        <div className="pt-2 text-center">
-          <button 
-            className="text-sm text-blue-600 hover:underline"
-            // onClick={() => onUpdateStatus(order.id, 'next_status')} // Example for future
-          >
-            Update Status (Future)
-          </button>
-        </div>
+        {/* Action Button */}
+        {order.status === 'Assigned' && (
+          <div className="pt-3 border-t border-gray-100">
+            <button
+              onClick={() => onUpdateStatus(order.id, 'PickedUp')}
+              disabled={isUpdatingStatus}
+              className={`w-full py-2 px-4 rounded-lg font-medium text-white transition-colors
+                ${isUpdatingStatus
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-purple-500 hover:bg-purple-600 active:bg-purple-700'
+                }`}
+            >
+              {isUpdatingStatus ? 'Updating...' : 'Items Picked Up'}
+            </button>
+            {updateError && <p className="text-red-500 text-xs mt-1">{updateError}</p>}
+          </div>
+        )}
+        {/* Add buttons for other status updates later (e.g., Delivering, Delivered) */}
       </div>
     </div>
   );
@@ -65,7 +74,9 @@ OngoingOrderCard.propTypes = {
     items: PropTypes.array.isRequired, // Keep items for potential future display
   }).isRequired,
   formatPrice: PropTypes.func.isRequired,
-  // onUpdateStatus: PropTypes.func.isRequired, // Add later
+  onUpdateStatus: PropTypes.func.isRequired,
+  isUpdatingStatus: PropTypes.bool.isRequired,
+  updateError: PropTypes.string,
 };
 
 export default OngoingOrderCard;

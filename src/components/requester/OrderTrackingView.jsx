@@ -23,8 +23,8 @@ function OrderTrackingView({ orderData, isCancelling, cancelError, onCancelOrder
       statusBgColor = 'bg-blue-50';
       break;
     case 'PickedUp':
-      statusMessage = `${orderData.delivererName || 'Your rider'} is on their way`;
-      statusBgColor = 'bg-green-50';
+      statusMessage = `Your order has been picked up!`; // Updated message
+      statusBgColor = 'bg-purple-50'; // Changed color to match deliverer card
       break;
     case 'Delivering':
       statusMessage = `${orderData.delivererName || 'Your rider'} is nearby`;
@@ -51,7 +51,11 @@ function OrderTrackingView({ orderData, isCancelling, cancelError, onCancelOrder
         {/* Status Header */}
         <div className="text-center">
           <h1 className="text-2xl font-semibold mb-2">Your Order Status</h1>
-          <p className="text-xl">{statusMessage}</p>
+          <p className="text-xl font-medium">{statusMessage}</p>
+          {/* ETA Display */}
+          {orderData.status === 'PickedUp' && (
+            <p className="text-lg text-gray-600 mt-1">Estimated arrival: ~5 minutes</p>
+          )}
         </div>
 
         {/* Order Details */}

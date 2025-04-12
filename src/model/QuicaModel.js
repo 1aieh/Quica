@@ -29,6 +29,8 @@ class QuicaModelClass {
   delivererOrders = []; // Array of orders currently assigned to the deliverer
   acceptingOrderId = null; // ID of order currently being accepted
   acceptOrderError = null; // Error message if accepting order fails
+  updatingOrderStatusId = null; // ID of order whose status is being updated
+  updateOrderStatusError = null; // Error message if updating status fails
 
   constructor() {
     // Initialize user as null (not logged in) instead of undefined
@@ -388,6 +390,21 @@ class QuicaModelClass {
       console.error("Model: Error accepting order:", error);
     } finally {
       this.acceptingOrderId = null;
+    }
+  }
+
+  async updateDelivererOrderStatus(orderId, newStatus) {
+    this.updatingOrderStatusId = orderId;
+    this.updateOrderStatusError = null;
+
+    try {
+      await updateOrderStatus(orderId, newStatus);
+      // Listener will update the model state
+    } catch (error) {
+      this.updateOrderStatusError = error.message || `Failed to update status to ${newStatus}`;
+      console.error("Model: Error updating order status:", error);
+    } finally {
+      this.updatingOrderStatusId = null;
     }
   }
 

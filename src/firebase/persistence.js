@@ -237,6 +237,8 @@ const updateOrderStatus = async (orderId, newStatus) => {
       updateData.cancelledAt = Timestamp.now();
     } else if (newStatus === 'Delivered') {
       updateData.deliveredAt = Timestamp.now();
+    } else if (newStatus === 'PickedUp') { // Add timestamp for PickedUp
+      updateData.pickedUpAt = Timestamp.now();
     }
 
     await updateDoc(orderRef, updateData);

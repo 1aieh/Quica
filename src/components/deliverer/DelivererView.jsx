@@ -9,7 +9,10 @@ function DelivererView({
   onToggleStatus,
   onAcceptOrder,
   acceptingOrderId,
-  acceptOrderError
+  acceptOrderError,
+  onUpdateStatus, // Add new prop
+  updatingOrderStatusId, // Add new prop
+  updateOrderStatusError // Add new prop
 }) {
   const formatPrice = (price) => `$${Number(price).toFixed(2)}`;
 
@@ -49,7 +52,9 @@ function DelivererView({
                       key={order.id}
                       order={order}
                       formatPrice={formatPrice}
-                      // Add onUpdateStatus prop later
+                      onUpdateStatus={onUpdateStatus}
+                      isUpdatingStatus={order.id === updatingOrderStatusId}
+                      updateError={order.id === updatingOrderStatusId ? updateOrderStatusError : null}
                     />
                   ))}
                 </div>
@@ -123,7 +128,10 @@ DelivererView.propTypes = {
   onToggleStatus: PropTypes.func.isRequired,
   onAcceptOrder: PropTypes.func.isRequired,
   acceptingOrderId: PropTypes.string,
-  acceptOrderError: PropTypes.string
+  acceptOrderError: PropTypes.string,
+  onUpdateStatus: PropTypes.func.isRequired, // Add prop type
+  updatingOrderStatusId: PropTypes.string, // Add prop type
+  updateOrderStatusError: PropTypes.string // Add prop type
 };
 
 export default DelivererView;
