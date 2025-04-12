@@ -1,7 +1,10 @@
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, setDoc, onSnapshot, collection, query, where, Timestamp, addDoc } from "firebase/firestore"; // Import Firestore functions including addDoc
+import { doc, getDoc, setDoc, onSnapshot, collection, query, where, Timestamp, addDoc, updateDoc } from "firebase/firestore"; // Import updateDoc
 import { auth, db } from "./firebaseConfig.js"; // Import db
 import { myQuicaModel } from "../model/QuicaModel.js";
+
+// Keep track of order tracking listener
+let unsubscribeOrderTracking = () => {};
 
 // Keep track of active Firestore listeners to unsubscribe on logout
 let unsubscribeUserProfile = () => {};
@@ -72,12 +75,21 @@ const initializeAuthListener = () => {
       });
       // --- End User Profile ---
 
+      // Check for active order if we have the profile
+      if (docSnap.exists()) {
+        const profileData = docSnap.data();
+        if (profileData.role === 'requester') {
+          await checkForActiveOrder(user.uid);
+        }
+      }
+
     } else {
       // User is signed out
       console.log("User signed out, clearing data and listeners.");
       myQuicaModel.setUser(null);
       myQuicaModel.clearUserData(); // This should clear profile, orders etc. in the model
-      // Listeners are already unsubscribed above
+      unsubscribeOrderTracking(); // Clean up order tracking listener
+      // Other listeners are already unsubscribed above
     }
   });
 
@@ -145,6 +157,87 @@ const setupOrderListeners = (uid, role) => {
   }
 };
 
+// Function to check for active order on login
+const checkForActiveOrder = async (userId) => {
+  console.log("Checking for active order for user:", userId);
+  const ordersRef = collection(db, "orders");
+  const q = query(
+    ordersRef,
+    where("requesterUid", "==", userId),
+    where("status", "not-in", ["Delivered", "Cancelled"])
+  );
+
+  try {
+    const querySnapshot = await getDoc(q);
+    if (!querySnapshot.empty) {
+      // Get the most recent active order
+      const latestOrder = querySnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())[0];
+      
+      // Setup tracking for this order
+      startOrderTracking(latestOrder.id);
+    }
+  } catch (error) {
+    console.error("Error checking for active order:", error);
+  }
+};
+
+// Function to start tracking a specific order
+const startOrderTracking = (orderId) => {
+  console.log("Starting order tracking for:", orderId);
+  // Clean up any existing listener
+  unsubscribeOrderTracking();
+
+  const orderRef = doc(db, "orders", orderId);
+  unsubscribeOrderTracking = onSnapshot(orderRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const orderData = { id: docSnap.id, ...docSnap.data() };
+      myQuicaModel.setCurrentlyTrackedOrder(orderData);
+
+      // If order reaches a final state, stop tracking
+      if (orderData.status === 'Delivered' || orderData.status === 'Cancelled') {
+        console.log("Order reached final state, stopping tracking");
+        unsubscribeOrderTracking();
+        myQuicaModel.clearTrackedOrder();
+      }
+    } else {
+      console.log("Order document no longer exists");
+      myQuicaModel.clearTrackedOrder();
+    }
+  }, (error) => {
+    console.error("Error tracking order:", error);
+    myQuicaModel.setError("Failed to track order status");
+  });
+
+  return unsubscribeOrderTracking;
+};
+
+// Function to update order status
+const updateOrderStatus = async (orderId, newStatus) => {
+  console.log(`Updating order ${orderId} status to ${newStatus}`);
+  try {
+    const orderRef = doc(db, "orders", orderId);
+    const updateData = {
+      status: newStatus,
+      updatedAt: Timestamp.now()
+    };
+
+    // Add specific timestamp based on status
+    if (newStatus === 'Cancelled') {
+      updateData.cancelledAt = Timestamp.now();
+    } else if (newStatus === 'Delivered') {
+      updateData.deliveredAt = Timestamp.now();
+    }
+
+    await updateDoc(orderRef, updateData);
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating order status:", error);
+    throw new Error(error.message || "Failed to update order status");
+  }
+};
+
 // --- Firestore Write Operations ---
 
 // Function to place a new order
@@ -168,6 +261,10 @@ const placeOrderInFirestore = async (orderData) => {
     };
     const docRef = await addDoc(collection(db, "orders"), completeOrderData);
     console.log("Order placed successfully with ID:", docRef.id);
+    
+    // Start tracking the new order
+    startOrderTracking(docRef.id);
+    
     return { success: true, orderId: docRef.id };
   } catch (error) {
     console.error("Error placing order in Firestore:", error);
@@ -204,5 +301,10 @@ const updateUserProfile = async (userId, dataToUpdate) => {
 };
 
 // Export functions needed by the Model or Presenters
-export { auth, placeOrderInFirestore, updateUserProfile }; 
-// Export other functions like acceptOrder, updateOrderStatus when implemented
+export { 
+  auth, 
+  placeOrderInFirestore, 
+  updateUserProfile,
+  updateOrderStatus,
+  startOrderTracking
+};

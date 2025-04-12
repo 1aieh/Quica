@@ -17,6 +17,12 @@ class QuicaModelClass {
   orderJustPlaced = false; // Flag to track if an order was just placed
   orderJustPlacedId = null; // ID of the newly placed order, used for tracking
   viewMode = 'order'; // Current view mode ('order' or 'deliver')
+  
+  // Order tracking state
+  currentlyTrackedOrder = null; // Full data of the active order being tracked
+  orderListenerUnsubscribe = null; // Function to unsubscribe from Firestore listener
+  orderCancellationInProgress = false; // Tracks cancellation action state
+  orderCancellationError = null; // Stores cancellation errors
 
   availableOrders = []; // Array of orders available for pickup
   delivererOrders = []; // Array of orders currently assigned to the deliverer
@@ -151,6 +157,50 @@ class QuicaModelClass {
     this.errorMessage = message;
   }
 
+  // Order tracking actions
+  setCurrentlyTrackedOrder(orderData) {
+    console.log("Model: Setting currently tracked order", orderData);
+    this.currentlyTrackedOrder = orderData;
+  }
+
+  setOrderListenerUnsubscribe(unsubscribeFn) {
+    this.orderListenerUnsubscribe = unsubscribeFn;
+  }
+
+  clearTrackedOrder() {
+    console.log("Model: Clearing tracked order");
+    if (this.orderListenerUnsubscribe) {
+      this.orderListenerUnsubscribe();
+      this.orderListenerUnsubscribe = null;
+    }
+    this.currentlyTrackedOrder = null;
+  }
+
+  async cancelOrder() {
+    if (!this.currentlyTrackedOrder) {
+      this.orderCancellationError = "No active order to cancel";
+      return;
+    }
+
+    if (this.currentlyTrackedOrder.status !== 'Unassigned') {
+      this.orderCancellationError = "Cannot cancel order - rider already assigned";
+      return;
+    }
+
+    this.orderCancellationInProgress = true;
+    this.orderCancellationError = null;
+
+    try {
+      await updateOrderStatus(this.currentlyTrackedOrder.id, 'Cancelled');
+      // The onSnapshot listener will handle updating the model state
+    } catch (error) {
+      this.orderCancellationError = error.message || "Failed to cancel order";
+      console.error("Model: Error cancelling order:", error);
+    } finally {
+      this.orderCancellationInProgress = false;
+    }
+  }
+
   clearUserData() {
     console.log("Model: Clearing user-specific data");
     this.userProfile = null;
@@ -163,13 +213,20 @@ class QuicaModelClass {
     this.errorMessage = null;
     this.orderJustPlaced = false;
     this.orderJustPlacedId = null;
+    // Clear order tracking state
+    this.clearTrackedOrder();
+    this.orderCancellationInProgress = false;
+    this.orderCancellationError = null;
   }
 
   placeOrder() {
     if (this.cart.length === 0) {
       this.setError("Cannot place order with empty cart");
-    return false; // Indicate failure if cart is empty
-  }
+      return false; // Indicate failure if cart is empty
+    }
+
+    // Clear any previous order tracking state
+    this.clearTrackedOrder();
 
   if (!this.user || !this.userProfile) {
     this.setError("User not logged in or profile not loaded.");
@@ -256,13 +313,13 @@ class QuicaModelClass {
       this.setLoading(false); // Clear loading state regardless of outcome
     });
 
-  // Note: This function becomes asynchronous due to the Firestore call,
-  // but we don't necessarily need to return the promise here unless
-  // the calling Presenter needs to wait for it. For now, we handle
-  // state updates internally based on the promise result.
-  // We return true optimistically for the UI flow, error state handles failure.
-  return true;
-}
+    // Note: This function becomes asynchronous due to the Firestore call,
+    // but we don't necessarily need to return the promise here unless
+    // the calling Presenter needs to wait for it. For now, we handle
+    // state updates internally based on the promise result.
+    // We return true optimistically for the UI flow, error state handles failure.
+    return true;
+  }
 
   resetOrderPlacedStatus() {
     this.orderJustPlaced = false;
