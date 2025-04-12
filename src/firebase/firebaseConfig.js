@@ -23,6 +23,9 @@ if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+if (!auth) {
+  throw new Error("Authentication failed to initialize");
+}
 
 export { db, auth };
 export default firebaseConfig; // You might not need this default export for the check script
