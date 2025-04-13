@@ -1,5 +1,5 @@
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, setDoc, onSnapshot, collection, query, where, Timestamp, addDoc, updateDoc } from "firebase/firestore"; // Import updateDoc
+import { doc, getDoc, setDoc, onSnapshot, collection, query, where, Timestamp, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { auth, db } from "./firebaseConfig.js"; // Import db
 import { myQuicaModel } from "../model/QuicaModel.js";
 
@@ -11,6 +11,10 @@ let unsubscribeUserProfile = () => {};
 let unsubscribeRequesterOrders = () => {};
 let unsubscribeAvailableOrders = () => {};
 let unsubscribeDelivererOrders = () => {}; // Added listener for deliverer's assigned orders
+let unsubscribeAdminOrders = () => {}; // Added listener for admin orders
+
+// Admin emails
+const adminEmails = ['laiehjwella@gmail.com', 'bhavyasehgal2010@gmail.com'];
 
 const initializeAuthListener = () => {
   console.log("Initializing auth state listener...");
@@ -23,10 +27,17 @@ const initializeAuthListener = () => {
     unsubscribeRequesterOrders();
     unsubscribeAvailableOrders();
     unsubscribeDelivererOrders(); // Unsubscribe deliverer orders listener
+    unsubscribeAdminOrders(); // Unsubscribe admin orders listener
 
     if (user) {
       // User is signed in
       myQuicaModel.setUser(user); // Set user in model immediately
+
+      // Setup admin listener if user is admin
+      if (adminEmails.includes(user.email)) {
+        console.log("Admin user detected, setting up admin order listener");
+        unsubscribeAdminOrders = setupAdminOrderListener(myQuicaModel);
+      }
 
       // --- Firestore Interaction: User Profile ---
       const userDocRef = doc(db, "users", user.uid);
@@ -343,11 +354,44 @@ const assignOrderToDeliverer = async (orderId, deliverer) => {
 };
 
 // Export functions needed by the Model or Presenters
+// Function to setup admin order listener
+const setupAdminOrderListener = (model) => {
+  console.log("Setting up admin order listener");
+  const ordersRef = collection(db, "orders");
+  const q = query(ordersRef, where("status", "in", ["Unassigned", "Assigned", "PickedUp"]));
+
+  return onSnapshot(q, (querySnapshot) => {
+    const orders = [];
+    querySnapshot.forEach((doc) => {
+      orders.push({ id: doc.id, ...doc.data() });
+    });
+    console.log("Admin orders updated:", orders.length);
+    model.setAdminActiveOrders(orders);
+  }, (error) => {
+    console.error("Error listening to admin orders:", error);
+    model.setError("Failed to load admin orders.");
+  });
+};
+
+// Function to delete an order from Firestore
+const deleteOrderFromFirestore = async (orderId) => {
+  console.log(`Deleting order ${orderId}`);
+  try {
+    const orderRef = doc(db, "orders", orderId);
+    await deleteDoc(orderRef);
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting order:", error);
+    throw new Error(error.message || "Failed to delete order");
+  }
+};
+
 export {
   auth,
   placeOrderInFirestore,
   updateUserProfile,
   updateOrderStatus,
   startOrderTracking,
-  assignOrderToDeliverer
+  assignOrderToDeliverer,
+  deleteOrderFromFirestore
 };

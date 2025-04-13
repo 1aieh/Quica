@@ -1,19 +1,22 @@
 import UserProfileWidget from './common/UserProfileWidget';
 
-const TopBar = ({ address, currentMode, onModeChange, userName, onSignOut }) => {
+const TopBar = ({ address, currentMode, onModeChange, userName, onSignOut, userEmail }) => {
+  const adminEmails = ['laiehjwella@gmail.com', 'bhavyasehgal2010@gmail.com'];
+  const isAdmin = adminEmails.includes(userEmail);
   return (
     <div className="bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Left: Address Widget */}
+          {/* Left: Logo and Address Widget */}
           <div className="flex items-center">
+            <img src="/quica-red-whitebg.png" alt="Quica" className="h-8 mr-3 object-contain" />
             <div className="text-sm">
               <span className="text-gray-500">Delivering to </span>
               <span className="font-medium">{address || 'No address set'}</span>
             </div>
           </div>
 
-          {/* Middle: Order/Deliver Toggle */}
+          {/* Middle: Mode Toggle */}
           <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
             <button
               className={`px-4 py-2 rounded-md text-sm font-medium ${
@@ -35,6 +38,18 @@ const TopBar = ({ address, currentMode, onModeChange, userName, onSignOut }) => 
             >
               Deliver
             </button>
+            {isAdmin && (
+              <button
+                className={`px-4 py-2 rounded-md text-sm font-medium ${
+                  currentMode === 'admin'
+                    ? 'bg-white shadow text-gray-800'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => onModeChange('admin')}
+              >
+                Admin
+              </button>
+            )}
           </div>
 
           {/* Right: User Profile Widget */}

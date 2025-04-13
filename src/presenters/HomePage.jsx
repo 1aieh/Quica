@@ -7,14 +7,16 @@ import GroceryListPresenter from "./GroceryListPresenter";
 import CartPresenter from "./CartPresenter";
 import DelivererPresenter from "./DelivererPresenter";
 import OrderPlacedView from "../components/requester/OrderPlacedView";
+import AdminPanelPresenter from "./AdminPanelPresenter";
 
 const HomePage = observer(() => {
   const handleModeChange = (mode) => {
     myQuicaModel.setViewMode(mode);
   };
 
-  // Get user display name from model
+  // Get user information from model
   const userName = myQuicaModel.userProfile?.displayName || myQuicaModel.user?.displayName || 'User';
+  const userEmail = myQuicaModel.user?.email;
 
   // Handle sign out
   const handleSignOut = () => {
@@ -31,6 +33,7 @@ const HomePage = observer(() => {
         currentMode={myQuicaModel.viewMode}
         onModeChange={handleModeChange}
         userName={userName}
+        userEmail={userEmail}
         onSignOut={handleSignOut}
       />
       
@@ -46,9 +49,11 @@ const HomePage = observer(() => {
               <CartPresenter />
             </div>
           </div>
-        ) : (
+        ) : myQuicaModel.viewMode === 'deliver' ? (
           <DelivererPresenter />
-        )}
+        ) : myQuicaModel.viewMode === 'admin' ? (
+          <AdminPanelPresenter />
+        ) : null}
       </div>
     </div>
   );
