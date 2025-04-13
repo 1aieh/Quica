@@ -1,8 +1,8 @@
 import { observer } from 'mobx-react-lite';
-import GroceryListView from '../components/requester/GroceryListView';
-
-import { myQuicaModel } from '../model/QuicaModel.js';
 import { useEffect } from 'react';
+import GroceryListView from '../components/requester/GroceryListView';
+import OngoingOrderBannerView from '../components/requester/OngoingOrderBannerView'; // Import the new banner view
+import { myQuicaModel } from '../model/QuicaModel.js';
 
 const GroceryListPresenter = observer(() => {
   useEffect(() => {
@@ -15,24 +15,20 @@ const GroceryListPresenter = observer(() => {
     myQuicaModel.addToCart(item);
   };
 
+  // Get the active order from the model's computed property
+  const activeOrder = myQuicaModel.activeRequesterOrder;
+
   return (
-    <div>
-      {myQuicaModel.isLoading && <div>Loading...</div>}
-      {myQuicaModel.errorMessage && (
-        <div className="text-red-500">{myQuicaModel.errorMessage}</div>
-      )}
-      {!myQuicaModel.isLoading && !myQuicaModel.errorMessage && (
-        <>
-          {myQuicaModel.groceryItems.length === 0 ? (
-            <div className="text-gray-500 p-4">No grocery items found. Please try again later.</div>
-          ) : (
-            <GroceryListView
-              items={myQuicaModel.groceryItems}
-              onAddToCart={handleAddToCart}
-            />
-          )}
-        </>
-      )}
+    <div className="min-h-[300px]">
+      {/* Conditionally render the banner if there's an active order */}
+      {activeOrder && <OngoingOrderBannerView order={activeOrder} />}
+
+      <GroceryListView
+        items={myQuicaModel.groceryItems}
+        onAddToCart={handleAddToCart}
+        loading={myQuicaModel.isLoading}
+        error={myQuicaModel.errorMessage}
+      />
     </div>
   );
 });

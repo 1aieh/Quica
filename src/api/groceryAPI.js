@@ -1,4 +1,4 @@
-const SPOONACULAR_API_KEY = 'd46177aae0fb4dcd86559493cc3054d7';
+const SPOONACULAR_API_KEY = 'c0f8ca195b224448bea029fe14984aee';
 
 /**
  * Generate a random integer between min and max (inclusive)
@@ -38,8 +38,7 @@ export async function searchSpoonacularProducts(query, number = 10) {
         id: item.id.toString(),
         name: item.title,
         image: `https://img.spoonacular.com/products/${item.id}-312x231.${item.imageType}`,
-        price: `SEK ${rawPrice}`,
-        rawPrice: rawPrice
+        price: rawPrice
       };
     });
 
