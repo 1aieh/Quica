@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { auth } from '../firebase/persistence.js';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import GoogleSignInButton from '../components/auth/GoogleSignInButton';
+import AuthView from '../components/auth/AuthView';
 import { myQuicaModel } from '../model/QuicaModel.js';
 
 function AuthPresenter() {
@@ -18,10 +18,10 @@ function AuthPresenter() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[50vh]">
-      <h1 className="mb-8 text-2xl font-semibold">Welcome to Quica</h1>
-      <GoogleSignInButton onSignIn={handleGoogleSignIn} />
-    </div>
+    <AuthView
+      onGoogleSignIn={handleGoogleSignIn}
+      teamMembers="Laieh Jwella and Bhavya Sehgal"
+    />
   );
 }
 
