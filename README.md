@@ -2,6 +2,8 @@
 
 ## What is Quica?
 
+### [Watch Demo Video (1:17)](https://vimeo.com/1075153820?share=copy)
+
 Quica is a simple web app connecting people who want groceries delivered (Requesters) with folks willing to do the shopping and delivery (Deliverers).
 
 Think of it like a mini-Instacart focused on quick, local deliveries. Requesters can browse items, add them to a cart, and place an order. Deliverers can see available orders nearby and accept them to earn a fee. The app provides real-time status updates for both users.
