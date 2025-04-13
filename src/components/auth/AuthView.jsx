@@ -9,7 +9,7 @@ function AuthView({ onGoogleSignIn, teamMembers }) {
       <div className="max-w-[1400px] mx-auto w-full">
         {/* Top Bar */}
         <div className="flex justify-between items-center w-full mb-10 lg:mb-16">
-          <img src={quicaLogo} alt="Quica Logo" className="h-8 lg:h-10" />
+          <img src={quicaLogo} alt="Quica Logo" className="h-[2.6rem] lg:h-[3.25rem]" />
           <p className="text-gray-500 text-sm lg:text-base">
             Made by {teamMembers}
           </p>
