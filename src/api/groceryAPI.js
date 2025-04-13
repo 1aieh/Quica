@@ -1,5 +1,3 @@
-const SPOONACULAR_API_KEY = 'c0f8ca195b224448bea029fe14984aee';
-
 /**
  * Generate a random integer between min and max (inclusive)
  */
@@ -12,7 +10,7 @@ export async function searchSpoonacularProducts(query, number = 10) {
     console.log('Fetching products with query:', query);
 
     const url = new URL('https://api.spoonacular.com/food/products/search');
-    url.searchParams.append('apiKey', SPOONACULAR_API_KEY);
+    url.searchParams.append('apiKey', import.meta.env.VITE_SPOONACULAR_API_KEY);
     url.searchParams.append('query', query);
     url.searchParams.append('number', number.toString());
 
