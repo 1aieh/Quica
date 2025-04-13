@@ -1,7 +1,7 @@
 import { makeAutoObservable } from "mobx";
 import { searchSpoonacularProducts } from "../api/groceryAPI";
 // Import the function to interact with Firestore persistence
-import { placeOrderInFirestore, updateOrderStatus, updateUserProfile, assignOrderToDeliverer } from "../firebase/persistence.js";
+import { placeOrderInFirestore, updateOrderStatus, updateUserProfile, assignOrderToDeliverer, deleteOrderFromFirestore } from "../firebase/persistence.js";
 
 class QuicaModelClass {
   //state
@@ -31,6 +31,9 @@ class QuicaModelClass {
   acceptOrderError = null; // Error message if accepting order fails
   updatingOrderStatusId = null; // ID of order whose status is being updated
   updateOrderStatusError = null; // Error message if updating status fails
+
+  // Admin state
+  adminActiveOrders = []; // Array of orders for admin panel
 
   constructor() {
     // Initialize user as null (not logged in) instead of undefined
@@ -339,12 +342,28 @@ class QuicaModelClass {
   }
 
   setViewMode(mode) {
-    if (mode !== 'order' && mode !== 'deliver') {
+    if (mode !== 'order' && mode !== 'deliver' && mode !== 'admin') {
       console.error('Invalid view mode:', mode);
       return;
     }
     console.log('Model: Setting view mode to:', mode);
     this.viewMode = mode;
+  }
+
+  // Admin actions
+  setAdminActiveOrders(orders) {
+    console.log("Model: Setting admin active orders", orders);
+    this.adminActiveOrders = orders;
+  }
+
+  async deleteOrder(orderId) {
+    try {
+      await deleteOrderFromFirestore(orderId);
+      return { success: true };
+    } catch (error) {
+      console.error("Model: Error deleting order:", error);
+      return { success: false, error: error.message || "Failed to delete order" };
+    }
   }
 
   // Deliverer actions
