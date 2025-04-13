@@ -7,8 +7,9 @@ const TopBar = ({ address, currentMode, onModeChange, userName, onSignOut, userE
     <div className="bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Left: Address Widget */}
+          {/* Left: Logo and Address Widget */}
           <div className="flex items-center">
+            <img src="/quica-red-whitebg.png" alt="Quica" className="h-8 mr-3 object-contain" />
             <div className="text-sm">
               <span className="text-gray-500">Delivering to </span>
               <span className="font-medium">{address || 'No address set'}</span>

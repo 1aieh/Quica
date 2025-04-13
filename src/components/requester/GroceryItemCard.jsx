@@ -27,7 +27,7 @@ const GroceryItemCard = memo(function GroceryItemCard({ item, onAddToCart }) {
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-3 flex flex-col items-center text-center w-48 min-h-[16rem]">
-      <div className="w-32 h-32 flex items-center justify-center mb-2 relative">
+      <div className="w-40 h-40 flex items-center justify-center mb-2 relative">
         {item.imageUrl && imageStatus === 'loading' && (
           <div className="absolute inset-0 bg-gray-100 rounded-md flex items-center justify-center">
             <div className="w-8 h-8 border-4 border-gray-200 border-t-gray-400 rounded-full animate-spin"></div>

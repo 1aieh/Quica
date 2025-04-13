@@ -9,36 +9,44 @@ function OrderTrackingView({ orderData, isCancelling, cancelError, onCancelOrder
     );
   }
 
-  // Determine status message and background color based on order status
+  // Determine title, status message and background color based on order status
+  let title = '';
   let statusMessage = '';
   let statusBgColor = '';
 
   switch (orderData.status) {
     case 'Unassigned':
-      statusMessage = 'Finding a rider for your order...';
+      title = 'Finding Rider';
+      statusMessage = '5 riders are online'; // This will need to be dynamic with actual rider count
       statusBgColor = 'bg-yellow-50';
       break;
     case 'Assigned':
+      title = 'Rider Found';
       statusMessage = `${orderData.delivererName || 'Your rider'} is picking up your order`;
       statusBgColor = 'bg-blue-50';
       break;
     case 'PickedUp':
-      statusMessage = `Your order has been picked up!`; // Updated message
-      statusBgColor = 'bg-purple-50'; // Changed color to match deliverer card
+      title = 'Order picked up';
+      statusMessage = `${orderData.delivererName || 'Your rider'} is on the way!`;
+      statusBgColor = 'bg-purple-50';
       break;
     case 'Delivering':
+      title = 'Order Nearby';
       statusMessage = `${orderData.delivererName || 'Your rider'} is nearby`;
       statusBgColor = 'bg-green-100';
       break;
     case 'Delivered':
+      title = 'Order Delivered';
       statusMessage = 'Order delivered successfully!';
       statusBgColor = 'bg-green-200';
       break;
     case 'Cancelled':
+      title = 'Order Cancelled';
       statusMessage = 'Order was cancelled';
       statusBgColor = 'bg-red-50';
       break;
     default:
+      title = 'Updating Status';
       statusMessage = 'Updating order status...';
       statusBgColor = 'bg-gray-50';
   }
@@ -50,7 +58,7 @@ function OrderTrackingView({ orderData, isCancelling, cancelError, onCancelOrder
       <div className="max-w-lg mx-auto space-y-6">
         {/* Status Header */}
         <div className="text-center">
-          <h1 className="text-2xl font-semibold mb-2">Your Order Status</h1>
+          <h1 className="text-2xl font-semibold mb-2">{title || 'Your Order Status'}</h1>
           <p className="text-xl font-medium">{statusMessage}</p>
           {/* ETA Display */}
           {orderData.status === 'PickedUp' && (
