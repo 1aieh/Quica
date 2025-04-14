@@ -51,7 +51,7 @@ function OrderTrackingView({ orderData, isCancelling, cancelError, onCancelOrder
       statusBgColor = 'bg-gray-50';
   }
 
-  const formatPrice = (price) => `$${Number(price).toFixed(2)}`;
+  const formatPrice = (price) => new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK' }).format(price);
 
   return (
     <div className={`min-h-screen ${statusBgColor} p-6`}>
