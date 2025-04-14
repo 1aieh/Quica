@@ -1,22 +1,11 @@
 import { observer } from 'mobx-react-lite';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { myQuicaModel } from './model/QuicaModel.js';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import AuthPresenter from './presenters/AuthPresenter';
 import ProfileSetupPresenter from './presenters/ProfileSetupPresenter';
 import HomePage from './presenters/HomePage';
-import OrderTrackingPresenter from './presenters/OrderTrackingPresenter';
 
 const App = observer(() => {
-  const location = useLocation();
-  const currentlyTrackedOrder = myQuicaModel.currentlyTrackedOrder;
-
-  // If there's a tracked order and we're not already on the tracking page,
-  // redirect to the tracking page
-  if (currentlyTrackedOrder && !location.pathname.startsWith('/track-order')) {
-    return <Navigate to={`/track-order/${currentlyTrackedOrder.id}`} replace />;
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Routes>
@@ -34,16 +23,6 @@ const App = observer(() => {
           element={
             <ProtectedRoute requiresProfile={false}>
               <ProfileSetupPresenter />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Order tracking route */}
-        <Route
-          path="/track-order/:orderId"
-          element={
-            <ProtectedRoute>
-              <OrderTrackingPresenter />
             </ProtectedRoute>
           }
         />
