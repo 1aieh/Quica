@@ -18,9 +18,16 @@ const adminEmails = ['laiehjwella@gmail.com', 'bhavyasehgal2010@gmail.com'];
 
 const initializeAuthListener = () => {
   console.log("Initializing auth state listener...");
+  let isFirstAuthCheck = true;
 
   const unsubscribeAuth = onAuthStateChanged(auth, async (user) => { // Make async
     console.log("Auth state changed:", user?.uid || "signed out");
+
+    // Set authInitialized to true after first auth check
+    if (isFirstAuthCheck) {
+      isFirstAuthCheck = false;
+      myQuicaModel.setAuthInitialized(true);
+    }
 
     // Always clean up previous listeners first
     unsubscribeUserProfile();
