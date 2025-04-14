@@ -15,8 +15,6 @@ class QuicaModelClass {
 
   cart = []; // Array of items in the current cart
   requesterOrders = []; // Array of orders placed by the current user
-  orderJustPlaced = false; // Flag to track if an order was just placed
-  orderJustPlacedId = null; // ID of the newly placed order, used for tracking
   viewMode = 'order'; // Current view mode ('order' or 'deliver')
   
   // Order tracking state
@@ -213,7 +211,8 @@ class QuicaModelClass {
 
     try {
       await updateOrderStatus(this.currentlyTrackedOrder.id, 'Cancelled');
-      // The onSnapshot listener will handle updating the model state
+      this.clearTrackedOrder(); // Explicitly clear the tracked order
+      this.setViewMode('order'); // Switch back to order view mode
     } catch (error) {
       this.orderCancellationError = error.message || "Failed to cancel order";
       console.error("Model: Error cancelling order:", error);
@@ -232,120 +231,86 @@ class QuicaModelClass {
     this.availableOrders = [];
     this.delivererOrders = [];
     this.errorMessage = null;
-    this.orderJustPlaced = false;
-    this.orderJustPlacedId = null;
     // Clear order tracking state
     this.clearTrackedOrder();
     this.orderCancellationInProgress = false;
     this.orderCancellationError = null;
   }
 
-  placeOrder() {
+  async placeOrder() {
     if (this.cart.length === 0) {
       this.setError("Cannot place order with empty cart");
-      return false; // Indicate failure if cart is empty
+      return false;
     }
 
     // Clear any previous order tracking state
     this.clearTrackedOrder();
 
-  if (!this.user || !this.userProfile) {
-    this.setError("User not logged in or profile not loaded.");
-    return false; // Indicate failure
-  }
+    if (!this.user || !this.userProfile) {
+      this.setError("User not logged in or profile not loaded.");
+      return false;
+    }
 
-  this.setLoading(true); // Indicate loading state
-  this.setError(null);   // Clear previous errors
+    this.setLoading(true);
+    this.setError(null);
 
-  // Calculate totals and prepare items array for Firestore
-  const itemSubtotal = this.cart.reduce((sum, item) => {
-    // Ensure we have valid price and quantity
-    const price = parseFloat(item.price) || 0;
-    const quantity = parseInt(item.quantity) || 1;
-    return sum + (price * quantity);
-  }, 0);
-  
-  const deliveryFee = 15; // Example fee, make this dynamic later if needed
-  const totalPrice = itemSubtotal + deliveryFee;
+    // Calculate totals and prepare items array for Firestore
+    const itemSubtotal = this.cart.reduce((sum, item) => {
+      const price = parseFloat(item.price) || 0;
+      const quantity = parseInt(item.quantity) || 1;
+      return sum + (price * quantity);
+    }, 0);
+    
+    const deliveryFee = 15;
+    const totalPrice = itemSubtotal + deliveryFee;
 
-  const orderItems = this.cart.map(item => {
-    // Ensure all fields have valid values or null
-    const itemData = {
-      productId: (item.id || '').toString(), // Convert to string, empty string if undefined
+    const orderItems = this.cart.map(item => ({
+      productId: (item.id || '').toString(),
       name: item.name || 'Unknown Item',
       price: parseFloat(item.price) || 0,
       quantity: parseInt(item.quantity) || 1,
       imageUrl: item.image || null
+    }));
+
+    // Ensure user profile data is valid
+    const userDisplayName = this.userProfile?.displayName || this.user?.displayName || null;
+    const userAddress = this.userProfile?.address || null;
+    const userPhone = this.userProfile?.phone || null;
+
+    const orderData = {
+      requesterUid: this.user.uid,
+      requesterName: userDisplayName,
+      requesterAddress: userAddress,
+      requesterPhone: userPhone,
+      items: orderItems,
+      itemSubtotal: Number(itemSubtotal.toFixed(2)),
+      deliveryFee: Number(deliveryFee.toFixed(2)),
+      totalPrice: Number(totalPrice.toFixed(2)),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      status: 'Unassigned' // Set initial status
     };
 
-    // Validate numeric fields
-    if (isNaN(itemData.price)) itemData.price = 0;
-    if (isNaN(itemData.quantity)) itemData.quantity = 1;
-
-    return itemData;
-  });
-
-  // Ensure user profile data is valid
-  const userDisplayName = this.userProfile?.displayName || this.user?.displayName || null;
-  const userAddress = this.userProfile?.address || null;
-  const userPhone = this.userProfile?.phone || null;
-
-  // Construct the order data object for Firestore
-  const orderData = {
-    // Requester Info (Denormalized)
-    requesterUid: this.user.uid,
-    requesterName: userDisplayName,
-    requesterAddress: userAddress,
-    requesterPhone: userPhone,
-
-    // Order Details
-    items: orderItems,
-    itemSubtotal: Number(itemSubtotal.toFixed(2)), // Round to 2 decimal places and ensure it's a number
-    deliveryFee: Number(deliveryFee.toFixed(2)),
-    totalPrice: Number(totalPrice.toFixed(2)),
-    // Add timestamps
-    createdAt: new Date(),
-    updatedAt: new Date()
-  };
-
-  // Final validation to ensure no undefined values
-  Object.keys(orderData).forEach(key => {
-    if (orderData[key] === undefined) {
-      orderData[key] = null;
-    }
-  });
-
-  // Call the persistence function to write to Firestore
-  placeOrderInFirestore(orderData)
-    .then(result => {
+    try {
+      const result = await placeOrderInFirestore(orderData);
       if (result.success) {
         console.log("Model: Order successfully placed in Firestore, ID:", result.orderId);
-        this.cart = []; // Clear the cart ONLY on successful placement
-        this.orderJustPlaced = true; // Set flag for UI transition
-        this.orderJustPlacedId = result.orderId; // Store the new order ID
-        // No need to update this.requesterOrders here, the listener will do it.
+        this.cart = []; // Clear the cart
+        // Update the tracked order - the Firestore listener will keep it up to date
+        this.currentlyTrackedOrder = { ...orderData, id: result.orderId };
+        return true;
       } else {
-        // Error is already set in persistence function
         console.error("Model: Failed to place order in Firestore", result.error);
-        // Keep cart as is, maybe show error message
+        return false;
       }
-    })
-    .finally(() => {
-      this.setLoading(false); // Clear loading state regardless of outcome
-    });
-
-    // Note: This function becomes asynchronous due to the Firestore call,
-    // but we don't necessarily need to return the promise here unless
-    // the calling Presenter needs to wait for it. For now, we handle
-    // state updates internally based on the promise result.
-    // We return true optimistically for the UI flow, error state handles failure.
-    return true;
+    } catch (error) {
+      this.setError(error.message || "Failed to place order");
+      return false;
+    } finally {
+      this.setLoading(false);
+    }
   }
 
-  resetOrderPlacedStatus() {
-    this.orderJustPlaced = false;
-    this.orderJustPlacedId = null;
-  }
 
   setViewMode(mode) {
     if (mode !== 'order' && mode !== 'deliver' && mode !== 'admin') {

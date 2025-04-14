@@ -133,12 +133,10 @@ const setupOrderListeners = (uid, role) => {
   console.log(`Setting up order listeners for UID: ${uid}, Role: ${role}`);
   console.log(`DEBUG: setupOrderListeners called with role: ${role}`); // DEBUG LOG
 
-  // Clean up all listeners when role changes
+  // Clean up list-related listeners when role changes
   unsubscribeRequesterOrders();
   unsubscribeAvailableOrders();
   unsubscribeDelivererOrders();
-  unsubscribeOrderTracking();
-  myQuicaModel.clearTrackedOrder();
 
   const ordersRef = collection(db, "orders");
 
