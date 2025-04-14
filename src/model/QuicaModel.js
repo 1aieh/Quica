@@ -386,7 +386,16 @@ class QuicaModelClass {
         updatedAt: new Date()
       });
       
-      if (!result.success) {
+      if (result.success) {
+        // Clear any errors when deactivating deliver mode
+        if (newStatus === 'inactive') {
+          this.setError(null);
+          // Reload grocery items if empty
+          if (this.groceryItems.length === 0) {
+            this.loadGroceryItems('pizza');
+          }
+        }
+      } else {
         this.setError("Failed to update deliverer status");
       }
     } catch (error) {
