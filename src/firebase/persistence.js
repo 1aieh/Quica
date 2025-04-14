@@ -48,12 +48,21 @@ const initializeAuthListener = () => {
 
       // --- Firestore Interaction: User Profile ---
       const userDocRef = doc(db, "users", user.uid);
-      unsubscribeUserProfile = onSnapshot(userDocRef, (docSnap) => {
+      unsubscribeUserProfile = onSnapshot(userDocRef, async (docSnap) => {
         if (docSnap.exists()) {
           console.log("User profile found:", docSnap.data());
+          
+          // First, clean up any existing order tracking
+          unsubscribeOrderTracking();
+          
           // Combine uid with Firestore data for the profile object in the model
           const profileData = { uid: user.uid, ...docSnap.data() };
           myQuicaModel.setUserProfile(profileData);
+
+          // Check for active order only for requesters AFTER profile is confirmed
+          if (profileData.role === 'requester' || profileData.role === 'both') {
+            await checkForActiveOrder(user.uid);
+          }
 
           // --- Firestore Interaction: Orders (Based on Role) ---
           // Setup listeners only AFTER profile (and role) is confirmed
@@ -124,10 +133,12 @@ const setupOrderListeners = (uid, role) => {
   console.log(`Setting up order listeners for UID: ${uid}, Role: ${role}`);
   console.log(`DEBUG: setupOrderListeners called with role: ${role}`); // DEBUG LOG
 
-  // Clean up previous listeners *again* just in case role changed without logout
+  // Clean up all listeners when role changes
   unsubscribeRequesterOrders();
   unsubscribeAvailableOrders();
-  unsubscribeDelivererOrders(); // Clean up deliverer listener too
+  unsubscribeDelivererOrders();
+  unsubscribeOrderTracking();
+  myQuicaModel.clearTrackedOrder();
 
   const ordersRef = collection(db, "orders");
 
@@ -187,6 +198,11 @@ const setupOrderListeners = (uid, role) => {
 // Function to check for active order on login
 const checkForActiveOrder = async (userId) => {
   console.log("Checking for active order for user:", userId);
+  
+  // Clean up any existing tracking before checking
+  unsubscribeOrderTracking();
+  myQuicaModel.clearTrackedOrder();
+  
   const ordersRef = collection(db, "orders");
   const q = query(
     ordersRef,
@@ -195,18 +211,21 @@ const checkForActiveOrder = async (userId) => {
   );
 
   try {
-    const querySnapshot = await getDocs(q); // Use getDocs for potentially multiple results
+    const querySnapshot = await getDocs(q);
     if (!querySnapshot.empty) {
       // Get the most recent active order
       const latestOrder = querySnapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())[0];
-
-      // Setup tracking for this order
+      
+      // Setup tracking for this order and update model
       startOrderTracking(latestOrder.id);
+      myQuicaModel.setCurrentlyTrackedOrder({ id: latestOrder.id, ...latestOrder.data() });
     }
   } catch (error) {
     console.error("Error checking for active order:", error);
+    myQuicaModel.setError("Failed to check for active orders");
+    myQuicaModel.clearTrackedOrder();
   }
 };
 
