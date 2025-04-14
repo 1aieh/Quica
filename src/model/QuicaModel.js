@@ -11,6 +11,7 @@ class QuicaModelClass {
   isLoading = false;
   errorMessage = null;
   isProfileSetupComplete = false;
+  authInitialized = false;
 
   cart = []; // Array of items in the current cart
   requesterOrders = []; // Array of orders placed by the current user
@@ -48,6 +49,11 @@ class QuicaModelClass {
       after: firebaseUser?.uid || null
     });
     this.user = firebaseUser;
+  }
+
+  setAuthInitialized(value) {
+    console.log("Model: Setting auth initialized:", value);
+    this.authInitialized = value;
   }
 
   setUserProfile(profileData) {
@@ -380,7 +386,16 @@ class QuicaModelClass {
         updatedAt: new Date()
       });
       
-      if (!result.success) {
+      if (result.success) {
+        // Clear any errors when deactivating deliver mode
+        if (newStatus === 'inactive') {
+          this.setError(null);
+          // Reload grocery items if empty
+          if (this.groceryItems.length === 0) {
+            this.loadGroceryItems('pizza');
+          }
+        }
+      } else {
         this.setError("Failed to update deliverer status");
       }
     } catch (error) {

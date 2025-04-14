@@ -1,4 +1,5 @@
 import { observer } from "mobx-react-lite";
+import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import { myQuicaModel } from "../model/QuicaModel";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase/persistence";
@@ -8,17 +9,19 @@ import CartPresenter from "./CartPresenter";
 import DelivererPresenter from "./DelivererPresenter";
 import OrderPlacedView from "../components/requester/OrderPlacedView";
 import AdminPanelPresenter from "./AdminPanelPresenter";
+import ProfileSetupPresenter from "./ProfileSetupPresenter";
 
-const HomePage = observer(() => {
-  const handleModeChange = (mode) => {
-    myQuicaModel.setViewMode(mode);
-  };
-
-  // Get user information from model
+// This component contains the main layout that's shared between order view modes
+const HomeLayout = ({ children }) => {
+  const navigate = useNavigate();
   const userName = myQuicaModel.userProfile?.displayName || myQuicaModel.user?.displayName || 'User';
   const userEmail = myQuicaModel.user?.email;
 
-  // Handle sign out
+  const handleModeChange = (mode) => {
+    myQuicaModel.setViewMode(mode);
+    navigate(`/${mode}`);
+  };
+
   const handleSignOut = () => {
     signOut(auth).catch((error) => {
       console.error("Sign out error:", error);
@@ -36,26 +39,51 @@ const HomePage = observer(() => {
         userEmail={userEmail}
         onSignOut={handleSignOut}
       />
-      
       <div className="max-w-7xl mx-auto px-2 py-6">
-        {myQuicaModel.orderJustPlaced ? (
-          <OrderPlacedView order={myQuicaModel.requesterOrders[myQuicaModel.requesterOrders.length - 1]} />
-        ) : myQuicaModel.viewMode === 'order' ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-2">
-              <GroceryListPresenter />
-            </div>
-            <div>
-              <CartPresenter />
-            </div>
-          </div>
-        ) : myQuicaModel.viewMode === 'deliver' ? (
-          <DelivererPresenter />
-        ) : myQuicaModel.viewMode === 'admin' ? (
-          <AdminPanelPresenter />
-        ) : null}
+        {children}
       </div>
     </div>
+  );
+};
+
+const OrderView = () => (
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div className="md:col-span-2">
+      <GroceryListPresenter />
+    </div>
+    <div>
+      <CartPresenter />
+    </div>
+  </div>
+);
+
+const HomePage = observer(() => {
+  // If profile is incomplete, show profile setup immediately
+  if (!myQuicaModel.isProfileSetupComplete) {
+    return <ProfileSetupPresenter />;
+  }
+
+  // If an order was just placed, show the order confirmation
+  if (myQuicaModel.orderJustPlaced) {
+    return (
+      <HomeLayout>
+        <OrderPlacedView 
+          order={myQuicaModel.requesterOrders[myQuicaModel.requesterOrders.length - 1]} 
+        />
+      </HomeLayout>
+    );
+  }
+
+  // Main application views
+  return (
+    <HomeLayout>
+      <Routes>
+        <Route path="order" element={<OrderView />} />
+        <Route path="deliver" element={<DelivererPresenter />} />
+        <Route path="admin" element={<AdminPanelPresenter />} />
+        <Route path="/" element={<Navigate to="/order" replace />} />
+      </Routes>
+    </HomeLayout>
   );
 });
 

@@ -1,3 +1,7 @@
+const formatPrice = (price) => {
+  return new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK' }).format(price);
+};
+
 const OrderPlacedView = ({ order }) => {
   return (
     <div className="text-center py-12">
@@ -8,9 +12,46 @@ const OrderPlacedView = ({ order }) => {
       {order && (
         <div className="mt-6 p-4 border border-gray-200 rounded-md bg-gray-50 text-left max-w-2xl mx-auto">
           <h3 className="text-lg font-semibold mb-2">Order Details:</h3>
-          <pre className="text-sm text-gray-700 whitespace-pre-wrap break-words">
-            {JSON.stringify(order, null, 2)}
-          </pre>
+          
+          {/* Customer Information */}
+          <div className="mb-4">
+            <p><span className="font-medium">Name:</span> {order.requesterName}</p>
+            <p><span className="font-medium">Address:</span> {order.requesterAddress}</p>
+            <p><span className="font-medium">Phone:</span> {order.requesterPhone}</p>
+            <p><span className="font-medium">Status:</span> {order.status}</p>
+          </div>
+          
+          {/* Order Items */}
+          <div className="mb-4">
+            <h4 className="font-medium mb-2">Items:</h4>
+            <div className="space-y-2">
+              {order.items.map((item, index) => (
+                <div key={index} className="flex justify-between items-center">
+                  <div>
+                    <span className="font-medium">{item.name}</span>
+                    <span className="text-gray-600 ml-2">x{item.quantity}</span>
+                  </div>
+                  <span>{formatPrice(item.price * item.quantity)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Order Summary */}
+          <div className="border-t pt-2 space-y-1">
+            <div className="flex justify-between">
+              <span>Subtotal:</span>
+              <span>{formatPrice(order.itemSubtotal)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Delivery Fee:</span>
+              <span>{formatPrice(order.deliveryFee)}</span>
+            </div>
+            <div className="flex justify-between font-semibold pt-1 border-t">
+              <span>Total:</span>
+              <span>{formatPrice(order.totalPrice)}</span>
+            </div>
+          </div>
         </div>
       )}
 

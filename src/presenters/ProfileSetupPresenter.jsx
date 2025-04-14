@@ -1,10 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
+import { useNavigate } from 'react-router-dom';
 import ProfileSetupView from '../components/auth/ProfileSetupView';
 import { myQuicaModel } from '../model/QuicaModel';
 import { updateUserProfile } from '../firebase/persistence';
 
 const ProfileSetupPresenter = observer(() => {
+  const navigate = useNavigate();
+
+  // Navigate to home page when profile setup is complete
+  useEffect(() => {
+    if (myQuicaModel.isProfileSetupComplete) {
+      navigate('/order');
+    }
+  }, [myQuicaModel.isProfileSetupComplete, navigate]);
+
   const handleSaveProfile = async ({ rolePreference, address, phone }) => {
     if (!myQuicaModel.user) {
       myQuicaModel.setError('User not logged in');

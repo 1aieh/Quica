@@ -1,6 +1,7 @@
 import UserProfileWidget from './common/UserProfileWidget';
+import { NavLink } from 'react-router-dom';
 
-const TopBar = ({ address, currentMode, onModeChange, userName, onSignOut, userEmail }) => {
+const TopBar = ({ address, userName, onSignOut, userEmail }) => {
   const adminEmails = ['laiehjwella@gmail.com', 'bhavyasehgal2010@gmail.com'];
   const isAdmin = adminEmails.includes(userEmail);
   return (
@@ -16,39 +17,45 @@ const TopBar = ({ address, currentMode, onModeChange, userName, onSignOut, userE
             </div>
           </div>
 
-          {/* Middle: Mode Toggle */}
+          {/* Middle: Navigation */}
           <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-            <button
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                currentMode === 'order'
-                  ? 'bg-white shadow text-gray-800'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => onModeChange('order')}
-            >
-              Order
-            </button>
-            <button
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                currentMode === 'deliver'
-                  ? 'bg-white shadow text-gray-800'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => onModeChange('deliver')}
-            >
-              Deliver
-            </button>
-            {isAdmin && (
-              <button
-                className={`px-4 py-2 rounded-md text-sm font-medium ${
-                  currentMode === 'admin'
+            <NavLink
+              to="/order"
+              className={({ isActive }) =>
+                `px-4 py-2 rounded-md text-sm font-medium ${
+                  isActive
                     ? 'bg-white shadow text-gray-800'
                     : 'text-gray-500 hover:text-gray-700'
-                }`}
-                onClick={() => onModeChange('admin')}
+                }`
+              }
+            >
+              Order
+            </NavLink>
+            <NavLink
+              to="/deliver"
+              className={({ isActive }) =>
+                `px-4 py-2 rounded-md text-sm font-medium ${
+                  isActive
+                    ? 'bg-white shadow text-gray-800'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`
+              }
+            >
+              Deliver
+            </NavLink>
+            {isAdmin && (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `px-4 py-2 rounded-md text-sm font-medium ${
+                    isActive
+                      ? 'bg-white shadow text-gray-800'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`
+                }
               >
                 Admin
-              </button>
+              </NavLink>
             )}
           </div>
 
