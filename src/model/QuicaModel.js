@@ -12,6 +12,7 @@ class QuicaModelClass {
   errorMessage = null;
   isProfileSetupComplete = false;
   authInitialized = false;
+  isLoadingInitialOrderCheck = true; // Add this state
 
   cart = []; // Array of items in the current cart
   requesterOrders = []; // Array of orders placed by the current user
@@ -52,6 +53,10 @@ class QuicaModelClass {
   setAuthInitialized(value) {
     console.log("Model: Setting auth initialized:", value);
     this.authInitialized = value;
+  }
+
+  setLoadingInitialOrderCheck(value) { // Add this setter
+    this.isLoadingInitialOrderCheck = value;
   }
 
   setUserProfile(profileData) {

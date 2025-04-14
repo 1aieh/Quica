@@ -1,5 +1,5 @@
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, setDoc, onSnapshot, collection, query, where, Timestamp, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, setDoc, onSnapshot, collection, query, where, Timestamp, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { auth, db } from "./firebaseConfig.js"; // Import db
 import { myQuicaModel } from "../model/QuicaModel.js";
 
@@ -61,7 +61,10 @@ const initializeAuthListener = () => {
 
           // Check for active order only for requesters AFTER profile is confirmed
           if (profileData.role === 'requester' || profileData.role === 'both') {
+            myQuicaModel.setLoadingInitialOrderCheck(true); // Set loading before check
             await checkForActiveOrder(user.uid);
+          } else {
+            myQuicaModel.setLoadingInitialOrderCheck(false); // Ensure loading is false if not checking
           }
 
           // --- Firestore Interaction: Orders (Based on Role) ---
@@ -222,8 +225,10 @@ const checkForActiveOrder = async (userId) => {
     }
   } catch (error) {
     console.error("Error checking for active order:", error);
-    myQuicaModel.setError("Failed to check for active orders");
+      myQuicaModel.setError("Failed to check for active orders");
     myQuicaModel.clearTrackedOrder();
+  } finally {
+    myQuicaModel.setLoadingInitialOrderCheck(false); // Clear loading after check
   }
 };
 

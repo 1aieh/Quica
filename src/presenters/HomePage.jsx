@@ -60,7 +60,7 @@ const GroceryView = () => (
 
 // Order mode view that shows either tracking or grocery list
 const OrderModeView = observer(() => {
-  if (myQuicaModel.currentlyTrackedOrder) {
+  if (myQuicaModel.activeRequesterOrder) {
     return <OrderTrackingPresenter />;
   }
   return <GroceryView />;
@@ -70,6 +70,17 @@ const HomePage = observer(() => {
   // If profile is incomplete, show profile setup immediately
   if (!myQuicaModel.isProfileSetupComplete) {
     return <ProfileSetupPresenter />;
+  }
+
+  // Show loading state while checking for active orders
+  if (myQuicaModel.isLoadingInitialOrderCheck) {
+    return (
+      <HomeLayout>
+        <div className="flex justify-center items-center min-h-[50vh]">
+          <div className="text-xl text-gray-600">Loading order status...</div>
+        </div>
+      </HomeLayout>
+    );
   }
 
   // Main application views - always within HomeLayout
