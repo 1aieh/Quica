@@ -20,9 +20,9 @@ const TopBar = ({ address, userName, onSignOut, userEmail }) => {
 
           {/* Middle: Navigation */}
           <TabGroup as="div" className="flex" manual>
-            <TabList className="flex space-x-1 bg-transparent p-0 rounded-none border-b border-gray-200">
+            <TabList className="flex space-x-1 bg-transparent p-0 rounded-none border-b border-gray-200 overflow-x-auto max-w-full whitespace-nowrap scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" style={{ WebkitOverflowScrolling: 'touch' }}>
               <Tab as={NavLink} to="/order" className={({ selected }) =>
-                `px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-150 focus:outline-none
+                `px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors duration-150 focus:outline-none
                 ${selected
                   ? 'border-blue-600 text-blue-700 font-semibold'
                   : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300'}
@@ -31,7 +31,7 @@ const TopBar = ({ address, userName, onSignOut, userEmail }) => {
                 Order
               </Tab>
               <Tab as={NavLink} to="/deliver" className={({ selected }) =>
-                `px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-150 focus:outline-none
+                `px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors duration-150 focus:outline-none
                 ${selected
                   ? 'border-blue-600 text-blue-700 font-semibold'
                   : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300'}
@@ -41,7 +41,7 @@ const TopBar = ({ address, userName, onSignOut, userEmail }) => {
               </Tab>
               {isAdmin && (
                 <Tab as={NavLink} to="/admin" className={({ selected }) =>
-                  `px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-150 focus:outline-none
+                  `px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors duration-150 focus:outline-none
                   ${selected
                     ? 'border-blue-600 text-blue-700 font-semibold'
                     : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300'}

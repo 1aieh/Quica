@@ -20,7 +20,7 @@ const CartView = ({
   }
 
   return (
-    <div className="space-y-4 bg-white p-6 rounded-lg shadow-sm h-full">
+    <div className="space-y-4 bg-white p-2 sm:p-6 rounded-lg shadow-sm h-full w-full max-w-lg mx-auto">
       <h2 className="text-xl font-semibold">Your Cart</h2>
       <ul className="divide-y divide-gray-200">
         {items.map((item) => (

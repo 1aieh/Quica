@@ -15,7 +15,7 @@ function AvailableOrderCard({ order, isAccepting, onAccept, formatPrice }) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4">
+    <div className="bg-white rounded-lg shadow-md p-2 sm:p-4 w-full max-w-xs">
       <div className="space-y-3">
         {/* Header: Order ID and Total */}
         <div className="flex justify-between items-start">
