@@ -58,7 +58,38 @@ function OngoingOrderCard({ order, formatPrice, onUpdateStatus, isUpdatingStatus
             {updateError && <p className="text-red-500 text-xs mt-1">{updateError}</p>}
           </div>
         )}
-        {/* Add buttons for other status updates later (e.g., Delivering, Delivered) */}
+        {order.status === 'PickedUp' && (
+          <div className="pt-3 border-t border-gray-100">
+            <button
+              onClick={() => onUpdateStatus(order.id, 'ArrivedAtApartment')}
+              disabled={isUpdatingStatus}
+              className={`w-full py-2 px-4 rounded-lg font-medium text-white transition-colors
+                ${isUpdatingStatus
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-green-500 hover:bg-green-600 active:bg-green-700'
+                }`}
+            >
+              {isUpdatingStatus ? 'Updating...' : 'Arrived at Apartment'}
+            </button>
+            {updateError && <p className="text-red-500 text-xs mt-1">{updateError}</p>}
+          </div>
+        )}
+        {order.status === 'ArrivedAtApartment' && (
+          <div className="pt-3 border-t border-gray-100">
+            <button
+              onClick={() => onUpdateStatus(order.id, 'Delivered')}
+              disabled={isUpdatingStatus}
+              className={`w-full py-2 px-4 rounded-lg font-medium text-white transition-colors
+                ${isUpdatingStatus
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700'
+                }`}
+            >
+              {isUpdatingStatus ? 'Updating...' : 'Mark as Delivered'}
+            </button>
+            {updateError && <p className="text-red-500 text-xs mt-1">{updateError}</p>}
+          </div>
+        )}
       </div>
     </div>
   );
