@@ -17,7 +17,7 @@ function GroceryListView({ items = [], onAddToCart, loading, error }) {
   return (
     <div className="p-4 h-full">
       <h2 className="text-xl font-semibold mb-4">Grocery Items</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-full overflow-x-auto">
         {items.map((item) => (
           <GroceryItemCard
             key={item.id}

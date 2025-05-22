@@ -17,8 +17,8 @@ function DelivererView({
   const formatPrice = (price) => `$${Number(price).toFixed(2)}`;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-lg mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-6">
+      <div className="max-w-lg w-full mx-auto space-y-6">
         {/* Delivery Mode Toggle */}
         <div className="bg-white rounded-lg shadow-md p-6 text-center">
           <h2 className="text-xl font-semibold mb-4">Delivery Mode</h2>

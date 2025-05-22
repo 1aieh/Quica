@@ -15,15 +15,15 @@ const ProfileSetupView = ({ onSaveProfile, isLoading, error }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col py-12 px-4 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h1 className="text-center text-3xl font-bold text-gray-900">
+    <div className="min-h-screen bg-gray-50 flex flex-col py-8 px-2 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-xs md:max-w-md">
+        <h1 className="text-center text-2xl sm:text-3xl font-bold text-gray-900">
           Tell us about yourself
         </h1>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-xs md:max-w-md">
+        <div className="bg-white py-6 sm:py-8 px-2 sm:px-4 shadow sm:rounded-lg sm:px-10">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <h2 className="text-lg font-medium text-gray-900">I'm interested in...</h2>

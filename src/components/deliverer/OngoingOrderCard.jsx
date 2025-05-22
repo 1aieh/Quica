@@ -13,7 +13,7 @@ function OngoingOrderCard({ order, formatPrice, onUpdateStatus, isUpdatingStatus
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500"> {/* Added border for visual distinction */}
+    <div className="bg-white rounded-lg shadow-md p-2 sm:p-4 border-l-4 border-blue-500 w-full max-w-xs">
       <div className="space-y-3">
         {/* Header: Order ID and Status */}
         <div className="flex justify-between items-center">

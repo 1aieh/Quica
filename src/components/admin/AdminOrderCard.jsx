@@ -21,7 +21,7 @@ const AdminOrderCard = ({ order, onDelete }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4">
+    <div className="bg-white rounded-lg border border-slate-200 p-2 sm:p-4 w-full max-w-xs">
       <div className="space-y-2">
         {/* Header: Order ID and Delete */}
         <div className="flex justify-between items-start">
