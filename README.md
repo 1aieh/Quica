@@ -1,12 +1,44 @@
 # Quica - Grocery Delivery Project (DH2642)
 
-## What is Quica?
+## Setup Instructions
+
+1. **Clone the repository:**
+   ```bash
+   git clone <your-repo-url>
+   cd <your-repo-directory>
+   ```
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+3. **Set up environment variables:**
+   - Copy `.env.example` to `.env` (if provided) and fill in your API keys (e.g., for Spoonacular, Firebase).
+   - If not provided, create a `.env` file and add:
+     ```
+     VITE_SPOONACULAR_API_KEY=your_spoonacular_key
+     VITE_FIREBASE_API_KEY=your_firebase_key
+     ...
+     ```
+4. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+5. **Open the app:**
+   - Visit the local URL shown in your terminal (usually http://localhost:5173).
+
+---
 
 ### [Watch Demo Video (1:17)](https://vimeo.com/1075153820?share=copy)
 
 Quica is a simple web app connecting people who want groceries delivered (Requesters) with folks willing to do the shopping and delivery (Deliverers).
 
 Think of it like a mini-Instacart focused on quick, local deliveries. Requesters can browse items, add them to a cart, and place an order. Deliverers can see available orders nearby and accept them to earn a fee. The app provides real-time status updates for both users.
+
+## Third-Party User-Visible Components
+
+- **@headlessui/react Tabs**: Used in `src/components/TopBar.jsx` for the navigation bar. This provides accessible, animated tab navigation for switching between Order, Deliver, and Admin views. [Headless UI Tabs Documentation](https://headlessui.com/react/tabs)
+- **Tailwind CSS**: Used throughout for utility-first, responsive styling. While not a "component library," it provides the visual foundation for all screens.
+- **Google Sign-In Button**: The sign-in button in the Auth screen uses the Google logo and is styled for clarity, but is implemented in-house. (No Material UI/Ant Design components are used.)
 
 ## How it Works (The Gist)
 
