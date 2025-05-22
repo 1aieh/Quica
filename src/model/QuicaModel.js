@@ -155,7 +155,7 @@ class QuicaModelClass {
 
   // Computed property to find the first active order for the requester
   get activeRequesterOrder() {
-    const activeStatuses = ['Unassigned', 'Assigned', 'PickedUp']; // Statuses indicating an ongoing order for the banner
+    const activeStatuses = ['Unassigned', 'Assigned', 'PickedUp', 'ArrivedAtApartment']; // Add new status
     return this.requesterOrders.find(order => activeStatuses.includes(order.status)) || null;
   }
 
@@ -430,6 +430,32 @@ class QuicaModelClass {
       console.error('Error loading grocery items:', error);
     } finally {
       this.setLoading(false);
+    }
+  }
+
+  async markArrivedAtApartment(orderId) {
+    this.updatingOrderStatusId = orderId;
+    this.updateOrderStatusError = null;
+    try {
+      await updateOrderStatus(orderId, 'ArrivedAtApartment');
+    } catch (error) {
+      this.updateOrderStatusError = error.message || 'Failed to update status to ArrivedAtApartment';
+      console.error('Model: Error updating order status:', error);
+    } finally {
+      this.updatingOrderStatusId = null;
+    }
+  }
+
+  async markDelivered(orderId) {
+    this.updatingOrderStatusId = orderId;
+    this.updateOrderStatusError = null;
+    try {
+      await updateOrderStatus(orderId, 'Delivered');
+    } catch (error) {
+      this.updateOrderStatusError = error.message || 'Failed to update status to Delivered';
+      console.error('Model: Error updating order status:', error);
+    } finally {
+      this.updatingOrderStatusId = null;
     }
   }
 }

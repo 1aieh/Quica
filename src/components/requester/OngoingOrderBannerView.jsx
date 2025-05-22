@@ -5,6 +5,8 @@ const statusMap = {
   Unassigned: { text: "Finding Rider", color: "bg-yellow-500" }, // Added Unassigned
   Assigned: { text: "Heading to ICA", color: "bg-blue-500" },    // Updated text
   PickedUp: { text: "Coming to You", color: "bg-green-500" },   // Updated text and color
+  ArrivedAtApartment: { text: "Rider Arrived", color: "bg-green-600" },
+  Delivered: { text: "Delivered", color: "bg-green-800" },
   // Add other statuses here if needed for future expansion (e.g., Delivering, Arrived)
 };
 

@@ -30,9 +30,9 @@ function OrderTrackingView({ orderData, isCancelling, cancelError, onCancelOrder
       statusMessage = `${orderData.delivererName || 'Your rider'} is on the way!`;
       statusBgColor = 'bg-purple-50';
       break;
-    case 'Delivering':
-      title = 'Order Nearby';
-      statusMessage = `${orderData.delivererName || 'Your rider'} is nearby`;
+    case 'ArrivedAtApartment':
+      title = 'Rider Arrived';
+      statusMessage = `${orderData.delivererName || 'Your rider'} has arrived at your address!`;
       statusBgColor = 'bg-green-100';
       break;
     case 'Delivered':

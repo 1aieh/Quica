@@ -1,0 +1,209 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# headlessui-tabs
+
+## Description
+Rules and best practices for implementing accessible, fully customizable tab interfaces using Headless UI's `TabGroup`, `TabList`, `Tab`, `TabPanels`, and `TabPanel`.
+
+## Version
+1.0.0
+
+---
+
+## Rule "Install Headless UI"
+
+### Description
+Ensure the package is installed before using components.
+
+### Trigger
+```txt
+npm install @headlessui/react
+```
+
+---
+
+## Rule "Basic Structure"
+
+### Description
+Use the correct nesting structure: TabGroup > TabList > Tab, and TabPanels > TabPanel.
+
+### Snippet
+```tsx
+import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react'
+
+<TabGroup>
+  <TabList>
+    <Tab>Tab 1</Tab>
+    <Tab>Tab 2</Tab>
+    <Tab>Tab 3</Tab>
+  </TabList>
+  <TabPanels>
+    <TabPanel>Content 1</TabPanel>
+    <TabPanel>Content 2</TabPanel>
+    <TabPanel>Content 3</TabPanel>
+  </TabPanels>
+</TabGroup>
+```
+
+---
+
+## Rule "Styling with data-* attributes"
+
+### Description
+Use data-selected and data-hover to apply styles conditionally.
+
+### Snippet
+```tsx
+<Tab className="data-hover:underline data-selected:bg-blue-500 data-selected:text-white">
+  Tab 1
+</Tab>
+```
+
+---
+
+## Rule "Styling with render props"
+
+### Description
+Use render props for fine-grained state-based styles.
+
+### Snippet
+```tsx
+<Tab as={Fragment}>
+  {({ selected, hover }) => (
+    <button className={clsx(selected && 'bg-blue-500 text-white', hover && 'underline')}>
+      Tab 1
+    </button>
+  )}
+</Tab>
+```
+
+---
+
+## Rule "Disable a Tab"
+
+### Description
+Use the `disabled` prop to prevent interaction.
+
+### Snippet
+```tsx
+<Tab disabled className="disabled:opacity-50">
+  Tab 2
+</Tab>
+```
+
+---
+
+## Rule "Vertical Tabs"
+
+### Description
+Add the `vertical` prop to TabGroup and style TabList as a column.
+
+### Snippet
+```tsx
+<TabGroup vertical>
+  <TabList className="flex flex-col">
+    <Tab>Tab 1</Tab>
+    <Tab>Tab 2</Tab>
+  </TabList>
+  <TabPanels>
+    <TabPanel>Content 1</TabPanel>
+    <TabPanel>Content 2</TabPanel>
+  </TabPanels>
+</TabGroup>
+```
+
+---
+
+## Rule "Manual tab activation"
+
+### Description
+Use `manual` on TabGroup to prevent automatic selection via arrow keys.
+
+### Snippet
+```tsx
+<TabGroup manual>
+  <TabList>
+    <Tab>Tab 1</Tab>
+    <Tab>Tab 2</Tab>
+  </TabList>
+  <TabPanels>
+    <TabPanel>Content</TabPanel>
+  </TabPanels>
+</TabGroup>
+```
+
+---
+
+## Rule "Default selected tab"
+
+### Description
+Use `defaultIndex` to preselect a tab.
+
+### Snippet
+```tsx
+<TabGroup defaultIndex={1}>
+  <TabList>
+    <Tab>Tab 1</Tab>
+    <Tab>Tab 2</Tab>
+    <Tab>Tab 3</Tab>
+  </TabList>
+  <TabPanels>
+    <TabPanel>Content 1</TabPanel>
+    <TabPanel>Content 2</TabPanel>
+    <TabPanel>Content 3</TabPanel>
+  </TabPanels>
+</TabGroup>
+```
+
+---
+
+## Rule "Controlled tabs"
+
+### Description
+Use `selectedIndex` and `onChange` for controlled tab behavior.
+
+### Snippet
+```tsx
+const [index, setIndex] = useState(0)
+
+<TabGroup selectedIndex={index} onChange={setIndex}>
+  <TabList>
+    <Tab>Tab 1</Tab>
+    <Tab>Tab 2</Tab>
+  </TabList>
+  <TabPanels>
+    <TabPanel>Content 1</TabPanel>
+    <TabPanel>Content 2</TabPanel>
+  </TabPanels>
+</TabGroup>
+```
+
+---
+
+## Rule "Render custom components"
+
+### Description
+Use `as` prop to render elements with custom or non-default HTML tags.
+
+### Snippet
+```tsx
+<TabList as="aside">
+  <Tab as="button">Tab 1</Tab>
+  <Tab as="button">Tab 2</Tab>
+</TabList>
+```
+
+---
+
+## Rule "Keyboard support"
+
+### Description
+Understand default keybindings: arrows, home/end, enter/space with `manual`.
+
+### Details
+- **Arrow keys**: switch tabs (left/right or up/down with vertical)
+- **Home/End**: jump to first/last
+- **Enter/Space (manual only)**: activates selected tab
