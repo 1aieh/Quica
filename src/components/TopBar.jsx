@@ -1,5 +1,6 @@
 import UserProfileWidget from './common/UserProfileWidget';
 import { NavLink } from 'react-router-dom';
+import { TabGroup, TabList, Tab } from '@headlessui/react';
 
 const TopBar = ({ address, userName, onSignOut, userEmail }) => {
   const adminEmails = ['laiehjwella@gmail.com', 'bhavyasehgal2010@gmail.com'];
@@ -18,46 +19,39 @@ const TopBar = ({ address, userName, onSignOut, userEmail }) => {
           </div>
 
           {/* Middle: Navigation */}
-          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-            <NavLink
-              to="/order"
-              className={({ isActive }) =>
-                `px-4 py-2 rounded-md text-sm font-medium ${
-                  isActive
-                    ? 'bg-white shadow text-gray-800'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`
-              }
-            >
-              Order
-            </NavLink>
-            <NavLink
-              to="/deliver"
-              className={({ isActive }) =>
-                `px-4 py-2 rounded-md text-sm font-medium ${
-                  isActive
-                    ? 'bg-white shadow text-gray-800'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`
-              }
-            >
-              Deliver
-            </NavLink>
-            {isAdmin && (
-              <NavLink
-                to="/admin"
-                className={({ isActive }) =>
-                  `px-4 py-2 rounded-md text-sm font-medium ${
-                    isActive
-                      ? 'bg-white shadow text-gray-800'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`
-                }
-              >
-                Admin
-              </NavLink>
-            )}
-          </div>
+          <TabGroup as="div" className="flex" manual>
+            <TabList className="flex space-x-1 bg-transparent p-0 rounded-none border-b border-gray-200">
+              <Tab as={NavLink} to="/order" className={({ selected }) =>
+                `px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-150 focus:outline-none
+                ${selected
+                  ? 'border-blue-600 text-blue-700 font-semibold'
+                  : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300'}
+                `
+              }>
+                Order
+              </Tab>
+              <Tab as={NavLink} to="/deliver" className={({ selected }) =>
+                `px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-150 focus:outline-none
+                ${selected
+                  ? 'border-blue-600 text-blue-700 font-semibold'
+                  : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300'}
+                `
+              }>
+                Deliver
+              </Tab>
+              {isAdmin && (
+                <Tab as={NavLink} to="/admin" className={({ selected }) =>
+                  `px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-150 focus:outline-none
+                  ${selected
+                    ? 'border-blue-600 text-blue-700 font-semibold'
+                    : 'border-transparent text-gray-500 hover:text-blue-600 hover:border-blue-300'}
+                  `
+                }>
+                  Admin
+                </Tab>
+              )}
+            </TabList>
+          </TabGroup>
 
           {/* Right: User Profile Widget */}
           <UserProfileWidget userName={userName} onSignOut={onSignOut} />
