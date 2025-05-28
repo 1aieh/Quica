@@ -374,6 +374,11 @@ class QuicaModelClass {
     }
   }
 
+  // Action to set accepting order ID
+  setAcceptingOrderId(id) {
+    this.acceptingOrderId = id;
+  }
+
   async acceptOrder(orderId) {
     if (!this.user || !this.userProfile) {
       this.setError("User not logged in or profile not loaded");
@@ -385,7 +390,7 @@ class QuicaModelClass {
       return;
     }
 
-    this.acceptingOrderId = orderId;
+    this.setAcceptingOrderId(orderId);
     this.acceptOrderError = null;
 
     try {
@@ -399,22 +404,31 @@ class QuicaModelClass {
       this.acceptOrderError = error.message || "Failed to accept order";
       console.error("Model: Error accepting order:", error);
     } finally {
-      this.acceptingOrderId = null;
+      this.setAcceptingOrderId(null);
     }
   }
 
+  // MobX actions for state modifications
+  setUpdateOrderStatusId(id) {
+    this.updatingOrderStatusId = id;
+  }
+
+  setUpdateOrderStatusError(error) {
+    this.updateOrderStatusError = error;
+  }
+
   async updateDelivererOrderStatus(orderId, newStatus) {
-    this.updatingOrderStatusId = orderId;
-    this.updateOrderStatusError = null;
+    this.setUpdateOrderStatusId(orderId);
+    this.setUpdateOrderStatusError(null);
 
     try {
       await updateOrderStatus(orderId, newStatus);
       // Listener will update the model state
     } catch (error) {
-      this.updateOrderStatusError = error.message || `Failed to update status to ${newStatus}`;
+      this.setUpdateOrderStatusError(error.message || `Failed to update status to ${newStatus}`);
       console.error("Model: Error updating order status:", error);
     } finally {
-      this.updatingOrderStatusId = null;
+      this.setUpdateOrderStatusId(null);
     }
   }
 

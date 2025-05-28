@@ -3,6 +3,10 @@ import { doc, getDoc, getDocs, setDoc, onSnapshot, collection, query, where, Tim
 import { auth, db } from "./firebaseConfig.js"; // Import db
 import { myQuicaModel } from "../model/QuicaModel.js";
 
+// Network status tracking
+let isOnline = navigator.onLine;
+console.log(`🌐 Initial network status: ${isOnline ? 'online' : 'offline'}`);
+
 // Keep track of order tracking listener
 let unsubscribeOrderTracking = () => {};
 
@@ -17,19 +21,22 @@ let unsubscribeAdminOrders = () => {}; // Added listener for admin orders
 const adminEmails = ['laiehjwella@gmail.com', 'bhavyasehgal2010@gmail.com'];
 
 const initializeAuthListener = () => {
-  console.log("Initializing auth state listener...");
+  console.log("🔐 Initializing auth state listener...");
   let isFirstAuthCheck = true;
 
   const unsubscribeAuth = onAuthStateChanged(auth, async (user) => { // Make async
-    console.log("Auth state changed:", user?.uid || "signed out");
+    console.log("👤 Auth state changed:", user ? `User ${user.uid} signed in` : "signed out");
+    console.log(`📡 Network status during auth change: ${navigator.onLine ? 'online' : 'offline'}`);
 
     // Set authInitialized to true after first auth check
     if (isFirstAuthCheck) {
       isFirstAuthCheck = false;
+      console.log("🎯 First auth check complete");
       myQuicaModel.setAuthInitialized(true);
     }
 
     // Always clean up previous listeners first
+    console.log("🧹 Cleaning up previous listeners");
     unsubscribeUserProfile();
     unsubscribeRequesterOrders();
     unsubscribeAvailableOrders();
@@ -38,29 +45,34 @@ const initializeAuthListener = () => {
 
     if (user) {
       // User is signed in
+      console.log("✅ Setting user in model:", user.uid);
       myQuicaModel.setUser(user); // Set user in model immediately
 
       // Setup admin listener if user is admin
       if (adminEmails.includes(user.email)) {
-        console.log("Admin user detected, setting up admin order listener");
+        console.log("👑 Admin user detected, setting up admin order listener");
         unsubscribeAdminOrders = setupAdminOrderListener(myQuicaModel);
       }
 
       // --- Firestore Interaction: User Profile ---
       const userDocRef = doc(db, "users", user.uid);
+      console.log("📝 Setting up user profile listener for:", user.uid);
+      
       unsubscribeUserProfile = onSnapshot(userDocRef, async (docSnap) => {
         if (docSnap.exists()) {
-          console.log("User profile found:", docSnap.data());
+          console.log("👤 User profile found:", docSnap.data());
           
           // First, clean up any existing order tracking
           unsubscribeOrderTracking();
           
           // Combine uid with Firestore data for the profile object in the model
           const profileData = { uid: user.uid, ...docSnap.data() };
+          console.log("💾 Setting user profile in model:", profileData);
           myQuicaModel.setUserProfile(profileData);
 
           // Check for active order only for requesters AFTER profile is confirmed
           if (profileData.role === 'requester' || profileData.role === 'both') {
+            console.log("🔍 Checking for active orders for requester:", user.uid);
             myQuicaModel.setLoadingInitialOrderCheck(true); // Set loading before check
             await checkForActiveOrder(user.uid);
           } else {
@@ -68,12 +80,12 @@ const initializeAuthListener = () => {
           }
 
           // --- Firestore Interaction: Orders (Based on Role) ---
-          // Setup listeners only AFTER profile (and role) is confirmed
+          console.log("📦 Setting up order listeners for role:", profileData.role);
           setupOrderListeners(user.uid, profileData.role);
 
         } else {
           // First sign-in: Create user profile document
-          console.log("User profile not found, creating...");
+          console.log("➕ User profile not found, creating new profile");
           const newUserProfile = {
             email: user.email,
             displayName: user.displayName || "New User",
@@ -86,48 +98,34 @@ const initializeAuthListener = () => {
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
           };
-          setDoc(userDocRef, newUserProfile)
-            .then(() => {
-              console.log("User profile created successfully.");
-              // The onSnapshot listener will trigger automatically now with the new data
-              // No need to call setUserProfile here again, listener handles it.
-            })
-            .catch((error) => {
-              console.error("Error creating user profile:", error);
-              myQuicaModel.setError("Failed to create user profile."); // Set error state in model
-            });
+
+          try {
+            await setDoc(userDocRef, newUserProfile);
+            console.log("✅ User profile created successfully");
+          } catch (error) {
+            console.error("❌ Error creating user profile:", error);
+            console.log(`📡 Network status during error: ${navigator.onLine ? 'online' : 'offline'}`);
+            myQuicaModel.setError("Failed to create user profile."); // Set error state in model
+          }
         }
       }, (error) => {
-          console.error("Error listening to user profile:", error);
+          console.error("❌ Error listening to user profile:", error);
+          console.log(`📡 Network status during listener error: ${navigator.onLine ? 'online' : 'offline'}`);
           myQuicaModel.setError("Failed to load user profile."); // Set error state
           // Maybe clear profile if listener fails?
           myQuicaModel.setUserProfile(null);
       });
-      // --- End User Profile ---
-
-      // Check for active order if we have the profile
-      // Note: This check might run before the profile listener sets the role,
-      // so relying on setupOrderListeners triggered by the profile update is safer.
-      // Consider removing this block or ensuring it runs *after* profile is set.
-      // if (docSnap.exists()) { // docSnap is not available here
-      //   const profileData = myQuicaModel.userProfile; // Use model state if available
-      //   if (profileData && profileData.role === 'requester') {
-      //     await checkForActiveOrder(user.uid);
-      //   }
-      // }
 
     } else {
       // User is signed out
-      console.log("User signed out, clearing data and listeners.");
+      console.log("👋 User signed out, clearing data and listeners");
       myQuicaModel.setUser(null);
       myQuicaModel.clearUserData(); // This should clear profile, orders etc. in the model
       unsubscribeOrderTracking(); // Clean up order tracking listener
-      // Other listeners are already unsubscribed above
     }
   });
 
   // Return the main auth listener unsubscriber function
-  // This should be called when the app unmounts if applicable
   return unsubscribeAuth;
 };
 
@@ -159,9 +157,9 @@ const setupOrderListeners = (uid, role) => {
     });
   }
 
-  // Listener for AVAILABLE orders (Unassigned) - only if role includes delivery capability
-  if (role === "both") {
-    console.log("DEBUG: Setting up listener for AVAILABLE orders (role=both)"); // DEBUG LOG
+  // Listener for AVAILABLE orders (Unassigned) - only if role includes delivery capability AND delivererStatus is active
+  if (role === "both" && myQuicaModel.userProfile?.delivererStatus === 'active') {
+    console.log("DEBUG: Setting up listener for AVAILABLE orders (role=both, status=active)"); // DEBUG LOG
     const qAvailable = query(ordersRef, where("status", "==", "Unassigned"));
     unsubscribeAvailableOrders = onSnapshot(qAvailable, (querySnapshot) => {
       console.log(`DEBUG: Available orders listener fired - count: ${querySnapshot.size}`); // DEBUG LOG
@@ -178,13 +176,16 @@ const setupOrderListeners = (uid, role) => {
 
     // Listener for orders ASSIGNED TO this deliverer
     console.log("DEBUG: Setting up listener for ASSIGNED orders (role=both)"); // DEBUG LOG
-    const qAssigned = query(ordersRef, where("delivererUid", "==", uid));
-     unsubscribeDelivererOrders = onSnapshot(qAssigned, (querySnapshot) => {
+    const qAssigned = query(
+      ordersRef, 
+      where("delivererUid", "==", uid),
+      // Include both active and completed orders
+      where("status", "in", ["Assigned", "PickedUp", "ArrivedAtApartment", "Delivered"])
+    );
+    unsubscribeDelivererOrders = onSnapshot(qAssigned, (querySnapshot) => {
       console.log(`DEBUG: Assigned orders listener fired - count: ${querySnapshot.size}`); // DEBUG LOG
       const orders = [];
       querySnapshot.forEach((doc) => {
-        // Filter out potentially cancelled/completed orders if needed based on status
-        // if (doc.data().status === 'Assigned' || doc.data().status === 'PickedUp' || ...)
         orders.push({ id: doc.id, ...doc.data() });
       });
       console.log("Deliverer's assigned orders updated:", orders.length);
@@ -221,11 +222,11 @@ const checkForActiveOrder = async (userId) => {
       
       // Setup tracking for this order and update model
       startOrderTracking(latestOrder.id);
-      myQuicaModel.setCurrentlyTrackedOrder({ id: latestOrder.id, ...latestOrder.data() });
+      myQuicaModel.setCurrentlyTrackedOrder(latestOrder);
     }
   } catch (error) {
     console.error("Error checking for active order:", error);
-      myQuicaModel.setError("Failed to check for active orders");
+    myQuicaModel.setError("Failed to check for active orders");
     myQuicaModel.clearTrackedOrder();
   } finally {
     myQuicaModel.setLoadingInitialOrderCheck(false); // Clear loading after check
@@ -264,9 +265,21 @@ const startOrderTracking = (orderId) => {
 
 // Function to update order status
 const updateOrderStatus = async (orderId, newStatus) => {
-  console.log(`Updating order ${orderId} status to ${newStatus}`);
+  console.log(`🔄 Updating order ${orderId} status to ${newStatus}`);
   try {
     const orderRef = doc(db, "orders", orderId);
+    
+    // First verify the order exists and the user has permission
+    const orderSnap = await getDoc(orderRef);
+    if (!orderSnap.exists()) {
+      throw new Error("Order not found");
+    }
+
+    const orderData = orderSnap.data();
+    if (orderData.delivererUid !== auth.currentUser?.uid) {
+      throw new Error("You don't have permission to update this order");
+    }
+
     const updateData = {
       status: newStatus,
       updatedAt: Timestamp.now()
@@ -283,11 +296,14 @@ const updateOrderStatus = async (orderId, newStatus) => {
       updateData.arrivedAtApartmentAt = Timestamp.now();
     }
 
+    console.log("📝 Attempting to update with data:", updateData);
     await updateDoc(orderRef, updateData);
+    console.log("✅ Order status updated successfully");
     return { success: true };
   } catch (error) {
-    console.error("Error updating order status:", error);
-    throw new Error(error.message || "Failed to update order status");
+    console.error("❌ Error updating order status:", error);
+    console.log("🔍 Current auth state:", auth.currentUser?.uid);
+    throw error;
   }
 };
 

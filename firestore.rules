@@ -17,18 +17,31 @@ service cloud.firestore {
     }
 
     function canDeliverOrders() {
-      return getUserData().role == 'both' && getUserData().delivererStatus == 'active';
+      let userData = getUserData();
+      return userData.role == 'both' && userData.delivererStatus == 'active';
     }
 
     function isValidOrderTransition(oldStatus, newStatus) {
       let validTransitions = {
         'Unassigned': ['Assigned', 'Cancelled'],
         'Assigned': ['PickedUp', 'Cancelled'],
-        'PickedUp': ['Delivering', 'Delivered'],
-        'Delivering': ['Arrived', 'Delivered'],
-        'Arrived': ['Delivered']
+        'PickedUp': ['ArrivedAtApartment', 'Cancelled'],
+        'ArrivedAtApartment': ['Delivered', 'Cancelled']
       };
       return oldStatus in validTransitions && newStatus in validTransitions[oldStatus];
+    }
+
+    function isDelivererOfOrder() {
+      return resource.data.delivererUid == request.auth.uid;
+    }
+
+    function getAllowedStatusFields(newStatus) {
+      let baseFields = ['status', 'updatedAt'];
+      return newStatus == 'Cancelled' ? baseFields.concat(['cancelledAt']) :
+             newStatus == 'Delivered' ? baseFields.concat(['deliveredAt']) :
+             newStatus == 'PickedUp' ? baseFields.concat(['pickedUpAt']) :
+             newStatus == 'ArrivedAtApartment' ? baseFields.concat(['arrivedAtApartmentAt']) :
+             baseFields;
     }
 
     // User profiles
@@ -58,10 +71,10 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (
         // Requester can read their own orders
         resource.data.requesterUid == request.auth.uid ||
-        // Deliverer with 'both' role and active status can read available orders
+        // Users with 'both' role can read available orders
         (resource.data.status == 'Unassigned' && canDeliverOrders()) ||
         // Assigned deliverer can read their assigned orders
-        resource.data.delivererUid == request.auth.uid ||
+        isDelivererOfOrder() ||
         // Admin can read all orders
         isAdmin()
       );
@@ -72,9 +85,10 @@ service cloud.firestore {
          resource.data.status == 'Unassigned' &&
          request.resource.data.status == 'Cancelled') ||
         
-        // Deliverer can update status of their assigned orders through valid transitions
-        (resource.data.delivererUid == request.auth.uid &&
-         isValidOrderTransition(resource.data.status, request.resource.data.status)) ||
+        // Deliverer can update status of their assigned orders
+        (isDelivererOfOrder() &&
+         isValidOrderTransition(resource.data.status, request.resource.data.status) &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(getAllowedStatusFields(request.resource.data.status))) ||
         
         // Active deliverer can accept unassigned orders
         (resource.data.status == 'Unassigned' &&

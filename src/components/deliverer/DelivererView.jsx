@@ -94,6 +94,52 @@ function DelivererView({
                 </div>
               )}
             </div>
+
+            {/* Separator */}
+            <hr className="border-gray-200" />
+
+            {/* Past Orders Section */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold">Past Orders</h2>
+              <div className="space-y-4">
+                {delivererOrders.filter(order => order.status === 'Delivered').map(order => (
+                  <div key={order.id} className="bg-white rounded-lg shadow-md p-4 border-l-4 border-green-500">
+                    <div className="space-y-3">
+                      {/* Header: Order ID and Status */}
+                      <div className="flex justify-between items-center">
+                        <div className="text-gray-500 text-sm">Order #{order.id.slice(-6)}</div>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium text-green-600 bg-green-100">
+                          Delivered
+                        </span>
+                      </div>
+
+                      {/* Requester Info */}
+                      <div className="text-sm space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Customer:</span>
+                          <span className="font-medium">{order.requesterName || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Address:</span>
+                          <span className="font-medium text-right">{order.requesterAddress || 'N/A'}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Order Total */}
+                      <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                        <span className="text-gray-500 text-sm">Total:</span>
+                        <span className="font-semibold text-lg">{formatPrice(order.totalPrice)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {!delivererOrders.some(order => order.status === 'Delivered') && (
+                  <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-500">
+                    No completed deliveries yet
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-500">
