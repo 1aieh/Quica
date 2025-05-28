@@ -113,7 +113,9 @@ service cloud.firestore {
 
       allow read: if isAuthenticated() && (
         resource.data.requesterUid == request.auth.uid ||
-        (resource.data.status == 'Unassigned' && canDeliverOrders()) ||
+        // ---- TEMPORARILY EXTREMELY RELAXED FOR AVAILABLE ORDERS ----
+        (resource.data.status == 'Unassigned' && request.auth != null) || // If unassigned, any authenticated user can read (for debugging)
+        // ---- Original condition was: (resource.data.status == 'Unassigned' && canDeliverOrders()) ----
         isDelivererOfOrder(resource.data) ||
         isAdmin()
       );

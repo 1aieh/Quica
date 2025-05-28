@@ -17,6 +17,9 @@ let unsubscribeAvailableOrders = () => {};
 let unsubscribeDelivererOrders = () => {}; // Added listener for deliverer's assigned orders
 let unsubscribeAdminOrders = () => {}; // Added listener for admin orders
 
+// New listener for past deliverer orders
+let unsubscribePastDelivererOrders = () => {};
+
 // Admin emails
 const adminEmails = ['laiehjwella@gmail.com', 'bhavyasehgal2010@gmail.com'];
 
@@ -42,6 +45,7 @@ const initializeAuthListener = () => {
     unsubscribeAvailableOrders();
     unsubscribeDelivererOrders(); // Unsubscribe deliverer orders listener
     unsubscribeAdminOrders(); // Unsubscribe admin orders listener
+    unsubscribePastDelivererOrders(); // Unsubscribe past deliverer orders listener
 
     if (user) {
       // User is signed in
@@ -138,6 +142,7 @@ const setupOrderListeners = (uid, role) => {
   unsubscribeRequesterOrders();
   unsubscribeAvailableOrders();
   unsubscribeDelivererOrders();
+  unsubscribePastDelivererOrders(); // Clean up past deliverer orders listener too
 
   const ordersRef = collection(db, "orders");
 
@@ -179,8 +184,8 @@ const setupOrderListeners = (uid, role) => {
     const qAssigned = query(
       ordersRef, 
       where("delivererUid", "==", uid),
-      // Include both active and completed orders
-      where("status", "in", ["Assigned", "PickedUp", "ArrivedAtApartment", "Delivered"])
+      // Only include active/ongoing statuses for this deliverer list
+      where("status", "in", ["Assigned", "PickedUp", "ArrivedAtApartment"])
     );
     unsubscribeDelivererOrders = onSnapshot(qAssigned, (querySnapshot) => {
       console.log(`DEBUG: Assigned orders listener fired - count: ${querySnapshot.size}`); // DEBUG LOG
@@ -193,6 +198,26 @@ const setupOrderListeners = (uid, role) => {
     }, (error) => {
         console.error("Error listening to deliverer orders:", error);
         myQuicaModel.setError("Failed to load your assigned orders.");
+    });
+
+    // Listener for PAST orders ASSIGNED TO this deliverer (status === "Delivered")
+    console.log("DEBUG: Setting up listener for PAST DELIVERED orders (role=both)");
+    const qPastDelivered = query(
+      ordersRef,
+      where("delivererUid", "==", uid),
+      where("status", "==", "Delivered")
+    );
+    unsubscribePastDelivererOrders = onSnapshot(qPastDelivered, (querySnapshot) => {
+      console.log(`DEBUG: Past delivered orders listener fired - count: ${querySnapshot.size}`);
+      const orders = [];
+      querySnapshot.forEach((doc) => {
+        orders.push({ id: doc.id, ...doc.data() });
+      });
+      console.log("Deliverer's past delivered orders updated:", orders.length);
+      myQuicaModel.setPastDelivererOrders(orders);
+    }, (error) => {
+      console.error("Error listening to past deliverer orders:", error);
+      myQuicaModel.setError("Failed to load your past delivered orders.");
     });
   }
 };

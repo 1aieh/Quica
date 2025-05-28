@@ -32,6 +32,9 @@ class QuicaModelClass {
   updatingOrderStatusId = null; // ID of order whose status is being updated
   updateOrderStatusError = null; // Error message if updating status fails
 
+  // New state for past deliverer orders
+  pastDelivererOrders = [];
+
   // Admin state
   adminActiveOrders = []; // Array of orders for admin panel
 
@@ -94,6 +97,12 @@ class QuicaModelClass {
   setDelivererOrders(orders) {
     this.delivererOrders = orders;
     console.log("Model: Deliverer orders set", this.delivererOrders);
+  }
+
+  // New setter for past deliverer orders
+  setPastDelivererOrders(orders) {
+    this.pastDelivererOrders = orders;
+    console.log("Model: Past deliverer orders set", this.pastDelivererOrders);
   }
 
   // Constants
@@ -240,6 +249,7 @@ class QuicaModelClass {
     this.clearTrackedOrder();
     this.orderCancellationInProgress = false;
     this.orderCancellationError = null;
+    this.pastDelivererOrders = []; // Clear on logout/user change
   }
 
   async placeOrder() {
