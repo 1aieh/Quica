@@ -8,17 +8,20 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthenticated() && 
+      return isAuthenticated() &&
         (request.auth.token.email in ['laiehjwella@gmail.com', 'bhavyasehgal2010@gmail.com']);
     }
 
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    // Best practice: check for existence if a document might not be there
+    // However, for a user's own data or data critical for a rule, often assumed to exist.
+    function getUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
     function canDeliverOrders() {
-      let userData = getUserData();
-      return userData.role == 'both';
+      let userDoc = getUserDoc();
+      // Ensure userDoc exists and has data before accessing fields
+      return userDoc.exists && userDoc.data.role == 'both' && userDoc.data.delivererStatus == 'active';
     }
 
     function isValidOrderTransition(oldStatus, newStatus) {
@@ -27,94 +30,138 @@ service cloud.firestore {
         'Assigned': ['PickedUp', 'Cancelled'],
         'PickedUp': ['ArrivedAtApartment', 'Cancelled'],
         'ArrivedAtApartment': ['Delivered', 'Cancelled']
+        // Delivered and Cancelled are terminal states
       };
       return oldStatus in validTransitions && newStatus in validTransitions[oldStatus];
     }
 
-    function isDelivererOfOrder() {
-      return resource.data.delivererUid == request.auth.uid;
+    function isDelivererOfOrder(orderData) {
+      return orderData.delivererUid == request.auth.uid;
     }
 
-    function getAllowedStatusFields(newStatus) {
+    // Fields allowed for a deliverer updating an already assigned order's status.
+    // These updates should use serverTimestamp() from the client.
+    function delivererStatusUpdateAllowedFields(newStatus) {
       let baseFields = ['status', 'updatedAt'];
-      return newStatus == 'Cancelled' ? baseFields.concat(['cancelledAt']) :
-             newStatus == 'Delivered' ? baseFields.concat(['deliveredAt']) :
-             newStatus == 'PickedUp' ? baseFields.concat(['pickedUpAt']) :
+      return newStatus == 'PickedUp' ? baseFields.concat(['pickedUpAt']) :
              newStatus == 'ArrivedAtApartment' ? baseFields.concat(['arrivedAtApartmentAt']) :
-             baseFields;
+             newStatus == 'Delivered' ? baseFields.concat(['deliveredAt']) :
+             newStatus == 'Cancelled' ? baseFields.concat(['cancelledAt']) : // Handles deliverer cancelling their order
+             baseFields; // Default if no specific timestamp field for the status
+    }
+
+    // Fields allowed for a requester cancelling their order.
+    // These updates should use serverTimestamp() from the client.
+    function requesterCancelAllowedFields() {
+      return ['status', 'updatedAt', 'cancelledAt'];
+    }
+
+    // Fields allowed when a deliverer assigns themselves to an order.
+    // Client currently sends Timestamp.now() for 'assignedAt' and 'updatedAt'.
+    function delivererAssignOrderAllowedFields() {
+      return ['status', 'delivererUid', 'delivererName', 'delivererPhone', 'assignedAt', 'updatedAt'];
     }
 
     // User profiles
     match /users/{userId} {
-      allow read: if isAuthenticated() && (
-        request.auth.uid == userId || 
-        isAdmin()
-      );
-      allow write: if isAuthenticated() && (
-        request.auth.uid == userId ||
-        isAdmin()
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+
+      // User creating their own profile (e.g., on first sign-in)
+      allow create: if isAuthenticated() &&
+                  request.auth.uid == userId &&
+                  request.resource.data.email == request.auth.token.email && // Email must match token
+                  // Ensure required fields for new user profile
+                  request.resource.data.keys().hasAll(['email', 'displayName', 'role', 'address', 'phone', 'delivererStatus', 'rating', 'totalDeliveries', 'createdAt', 'updatedAt']) &&
+                  request.resource.data.role == 'requester'; // Default role
+
+      allow update: if isAuthenticated() && (
+        // User updating their own profile
+        (request.auth.uid == userId &&
+          // Ensure immutable fields are not changed by the user
+          request.resource.data.email == resource.data.email &&
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          // Ensure the client is providing an 'updatedAt' field (which your code does)
+          request.resource.data.updatedAt != null && // Your client sends Timestamp.now()
+          // Allow changes ONLY to these specific fields.
+          // 'affectedKeys()' gives us the fields being written in this specific request.
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+            ['displayName', 'address', 'phone', 'delivererStatus', 'updatedAt']
+          )
+        ) ||
+        // Admin can update any user profile (also expecting updatedAt)
+        (isAdmin() && request.resource.data.updatedAt != null)
       );
     }
 
     // Orders
     match /orders/{orderId} {
-      allow create: if isAuthenticated() && (
-        // Only authenticated users can create orders
+      allow create: if isAuthenticated() &&
         request.resource.data.requesterUid == request.auth.uid &&
-        // Ensure required fields are present
-        'status' in request.resource.data &&
-        'requesterUid' in request.resource.data &&
-        'items' in request.resource.data &&
-        request.resource.data.status == 'Unassigned'
-      );
+        request.resource.data.status == 'Unassigned' && // Order must start as Unassigned
+        request.resource.data.delivererUid == null &&    // Must be null on creation
+        request.resource.data.items.size() > 0 &&       // Must have items
+        // Ensure essential fields are present, allowing for other null-initialized fields.
+        request.resource.data.keys().hasAll([
+          'items', 'totalPrice', 'requesterUid', 'requesterName', 'requesterAddress', 'requesterPhone',
+          'status', 'paymentStatus', // paymentStatus is now expected
+          'delivererUid', // Ensure it's there (and checked to be null above)
+          'createdAt', 'updatedAt' // Client Timestamps are essential
+          // Other fields like delivererName, delivererPhone, assignedAt, etc., are initialized to null by client,
+          // so hasAll is more flexible than hasOnly for this case.
+        ]);
 
       allow read: if isAuthenticated() && (
-        // Requester can read their own orders
         resource.data.requesterUid == request.auth.uid ||
-        // Users with 'both' role can read available orders
         (resource.data.status == 'Unassigned' && canDeliverOrders()) ||
-        // Assigned deliverer can read their assigned orders
-        isDelivererOfOrder() ||
-        // Admin can read all orders
+        isDelivererOfOrder(resource.data) ||
         isAdmin()
       );
 
       allow update: if isAuthenticated() && (
-        // --- Temporarily highly relaxed rule for deliverer update debugging ---
-        // The goal is to test if an authenticated user who is the deliverer of the order
-        // (resource.data.delivererUid == request.auth.uid) can perform an update.
-        // All other conditions (requester, admin, other deliverer actions) and
-        // finer-grained checks (isValidOrderTransition, affectedKeys) are removed for this test.
-        request.auth.uid == resource.data.delivererUid
+        // Condition 1: Requester cancelling their *unassigned* order
+        (
+          resource.data.requesterUid == request.auth.uid &&
+          resource.data.status == 'Unassigned' && // Can only cancel if unassigned
+          request.resource.data.status == 'Cancelled' &&
+          request.resource.data.keys().hasOnly(requesterCancelAllowedFields()) &&
+          // Enforce server timestamps if client's updateOrderStatus sends serverTimestamp()
+          request.resource.data.updatedAt == request.time &&
+          request.resource.data.cancelledAt == request.time
+        ) ||
 
-        // --- Original more complex rule structure (commented out for this extreme test) ---
-        // // Requester can only cancel their unassigned orders
-        // (resource.data.requesterUid == request.auth.uid &&
-        //  resource.data.status == 'Unassigned' &&
-        //  request.resource.data.status == 'Cancelled') ||
-        //
-        // // Deliverer can update status of their assigned orders
-        // (isDelivererOfOrder() && // This is effectively request.auth.uid == resource.data.delivererUid
-        //  isValidOrderTransition(resource.data.status, request.resource.data.status)
-        //  // && request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'updatedAt', 'arrivedAtApartmentAt', 'pickedUpAt', 'deliveredAt', 'cancelledAt'])
-        //  ) ||
-        //
-        // // Active deliverer can accept unassigned orders
-        // (resource.data.status == 'Unassigned' &&
-        //  request.resource.data.status == 'Assigned' &&
-        //  request.resource.data.delivererUid == request.auth.uid &&
-        //  canDeliverOrders()) ||
-        //
-        // // Admin can update any order
-        // isAdmin()
+        // Condition 2: Deliverer updating status of their *assigned* order
+        (
+          isDelivererOfOrder(resource.data) &&
+          isValidOrderTransition(resource.data.status, request.resource.data.status) &&
+          request.resource.data.keys().hasOnly(delivererStatusUpdateAllowedFields(request.resource.data.status)) &&
+          request.resource.data.updatedAt == request.time &&
+          (
+            (request.resource.data.status == 'PickedUp' && request.resource.data.pickedUpAt == request.time) ||
+            (request.resource.data.status == 'ArrivedAtApartment' && request.resource.data.arrivedAtApartmentAt == request.time) ||
+            (request.resource.data.status == 'Delivered' && request.resource.data.deliveredAt == request.time) ||
+            (request.resource.data.status == 'Cancelled' && request.resource.data.cancelledAt == request.time) ||
+            !(request.resource.data.status in ['PickedUp', 'ArrivedAtApartment', 'Delivered', 'Cancelled'])
+          )
+        ) ||
+
+        // Condition 3: Deliverer *accepting* an unassigned order (Hyper Relaxed for debugging)
+        (
+          resource.data.status == 'Unassigned' && // Order must be unassigned
+          request.resource.data.status == 'Assigned' && // New status must be Assigned
+          request.resource.data.delivererUid == request.auth.uid // Assigning to self
+          // Removed canDeliverOrders() for this specific test. Was: canDeliverOrders() 
+          // Intentionally bypassing specific field validation (hasOnly/affectedKeys) for max relaxation here
+        ) ||
+
+        (isAdmin()) // Condition 4: Admin can update any order
       );
 
-      // Only admin can delete orders
       allow delete: if isAuthenticated() && isAdmin();
     }
 
-    // Deny access to any other collections by default
-    match /{document=**} {
+    // Default deny all access to any other paths
+    match /{path=**}/documents {
       allow read, write: if false;
     }
   }

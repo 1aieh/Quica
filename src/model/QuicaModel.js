@@ -1,4 +1,4 @@
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
 import { searchSpoonacularProducts } from "../api/groceryAPI";
 // Import the function to interact with Firestore persistence
 import { placeOrderInFirestore, updateOrderStatus, updateUserProfile, assignOrderToDeliverer, deleteOrderFromFirestore } from "../firebase/persistence.js";
@@ -401,7 +401,9 @@ class QuicaModelClass {
       });
       // The onSnapshot listener will handle updating the model state
     } catch (error) {
-      this.acceptOrderError = error.message || "Failed to accept order";
+      runInAction(() => {
+        this.acceptOrderError = error.message || "Failed to accept order";
+      });
       console.error("Model: Error accepting order:", error);
     } finally {
       this.setAcceptingOrderId(null);
