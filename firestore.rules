@@ -80,25 +80,33 @@ service cloud.firestore {
       );
 
       allow update: if isAuthenticated() && (
-        // Requester can only cancel their unassigned orders
-        (resource.data.requesterUid == request.auth.uid && 
-         resource.data.status == 'Unassigned' &&
-         request.resource.data.status == 'Cancelled') ||
-        
-        // Deliverer can update status of their assigned orders
-        (isDelivererOfOrder() &&
-         isValidOrderTransition(resource.data.status, request.resource.data.status) 
-         // && request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'updatedAt', 'arrivedAtApartmentAt', 'pickedUpAt', 'deliveredAt', 'cancelledAt'])
-         ) ||
-        
-        // Active deliverer can accept unassigned orders
-        (resource.data.status == 'Unassigned' &&
-         request.resource.data.status == 'Assigned' &&
-         request.resource.data.delivererUid == request.auth.uid &&
-         canDeliverOrders()) ||
-        
-        // Admin can update any order
-        isAdmin()
+        // --- Temporarily highly relaxed rule for deliverer update debugging ---
+        // The goal is to test if an authenticated user who is the deliverer of the order
+        // (resource.data.delivererUid == request.auth.uid) can perform an update.
+        // All other conditions (requester, admin, other deliverer actions) and
+        // finer-grained checks (isValidOrderTransition, affectedKeys) are removed for this test.
+        request.auth.uid == resource.data.delivererUid
+
+        // --- Original more complex rule structure (commented out for this extreme test) ---
+        // // Requester can only cancel their unassigned orders
+        // (resource.data.requesterUid == request.auth.uid &&
+        //  resource.data.status == 'Unassigned' &&
+        //  request.resource.data.status == 'Cancelled') ||
+        //
+        // // Deliverer can update status of their assigned orders
+        // (isDelivererOfOrder() && // This is effectively request.auth.uid == resource.data.delivererUid
+        //  isValidOrderTransition(resource.data.status, request.resource.data.status)
+        //  // && request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'updatedAt', 'arrivedAtApartmentAt', 'pickedUpAt', 'deliveredAt', 'cancelledAt'])
+        //  ) ||
+        //
+        // // Active deliverer can accept unassigned orders
+        // (resource.data.status == 'Unassigned' &&
+        //  request.resource.data.status == 'Assigned' &&
+        //  request.resource.data.delivererUid == request.auth.uid &&
+        //  canDeliverOrders()) ||
+        //
+        // // Admin can update any order
+        // isAdmin()
       );
 
       // Only admin can delete orders
