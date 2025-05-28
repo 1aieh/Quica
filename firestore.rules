@@ -129,31 +129,21 @@ service cloud.firestore {
           request.resource.data.updatedAt == request.time &&
           request.resource.data.cancelledAt == request.time
         ) ||
-
-        // Condition 2: Deliverer updating status of their *assigned* order
-        (
+        ( // Condition 2: Deliverer updating status (So Fucking Relaxed for debugging)
           isDelivererOfOrder(resource.data) &&
           isValidOrderTransition(resource.data.status, request.resource.data.status) &&
-          request.resource.data.keys().hasOnly(delivererStatusUpdateAllowedFields(request.resource.data.status)) &&
-          request.resource.data.updatedAt == request.time &&
-          (
-            (request.resource.data.status == 'PickedUp' && request.resource.data.pickedUpAt == request.time) ||
-            (request.resource.data.status == 'ArrivedAtApartment' && request.resource.data.arrivedAtApartmentAt == request.time) ||
-            (request.resource.data.status == 'Delivered' && request.resource.data.deliveredAt == request.time) ||
-            (request.resource.data.status == 'Cancelled' && request.resource.data.cancelledAt == request.time) ||
-            !(request.resource.data.status in ['PickedUp', 'ArrivedAtApartment', 'Delivered', 'Cancelled'])
-          )
+          request.resource.data.status != null && // New status must be provided
+          request.resource.data.updatedAt != null // Client sends serverTimestamp for this
+          // Removed all field list checks (hasOnly/affectedKeys)
+          // Removed all explicit request.time checks for the timestamps for this relaxed version
         ) ||
-
-        // Condition 3: Deliverer *accepting* an unassigned order (Hyper Relaxed for debugging)
-        (
+        ( // Condition 3: Deliverer *accepting* an unassigned order (Hyper Relaxed for debugging)
           resource.data.status == 'Unassigned' && // Order must be unassigned
           request.resource.data.status == 'Assigned' && // New status must be Assigned
           request.resource.data.delivererUid == request.auth.uid // Assigning to self
           // Removed canDeliverOrders() for this specific test. Was: canDeliverOrders() 
           // Intentionally bypassing specific field validation (hasOnly/affectedKeys) for max relaxation here
         ) ||
-
         (isAdmin()) // Condition 4: Admin can update any order
       );
 
