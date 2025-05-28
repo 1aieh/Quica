@@ -393,19 +393,35 @@ class QuicaModelClass {
     this.setAcceptingOrderId(orderId);
     this.acceptOrderError = null;
 
+    // Optimistic update: Find the order and remove it from availableOrders
+    const orderBeingAccepted = this.availableOrders.find(o => o.id === orderId);
+    if (orderBeingAccepted) {
+      runInAction(() => {
+        this.availableOrders = this.availableOrders.filter(o => o.id !== orderId);
+      });
+    }
+
     try {
       await assignOrderToDeliverer(orderId, {
         uid: this.user.uid,
         displayName: this.userProfile.displayName || this.user.displayName,
         phone: this.userProfile.phone
       });
-      // The onSnapshot listener will handle updating the model state
+      // The onSnapshot listener will handle updating delivererOrders and confirming removal from availableOrders.
     } catch (error) {
       runInAction(() => {
         this.acceptOrderError = error.message || "Failed to accept order";
+        // Revert optimistic update if Firestore operation failed
+        if (orderBeingAccepted && !this.availableOrders.find(o => o.id === orderId)) {
+          // Add it back, maintaining the original order or just push
+          // For simplicity, just pushing. Consider sorting if order matters.
+          this.availableOrders.push(orderBeingAccepted);
+        }
       });
       console.error("Model: Error accepting order:", error);
     } finally {
+      // Ensure setAcceptingOrderId is an action or wrapped if it modifies state directly
+      // In makeAutoObservable, direct assignments in methods are usually auto-actions.
       this.setAcceptingOrderId(null);
     }
   }
