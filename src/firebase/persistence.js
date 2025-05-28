@@ -1,5 +1,5 @@
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, getDocs, setDoc, onSnapshot, collection, query, where, Timestamp, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, setDoc, onSnapshot, collection, query, where, Timestamp, addDoc, updateDoc, deleteDoc, runTransaction, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "./firebaseConfig.js"; // Import db
 import { myQuicaModel } from "../model/QuicaModel.js";
 
@@ -266,43 +266,116 @@ const startOrderTracking = (orderId) => {
 // Function to update order status
 const updateOrderStatus = async (orderId, newStatus) => {
   console.log(`🔄 Updating order ${orderId} status to ${newStatus}`);
+  console.log(`🔑 Current user UID: ${auth.currentUser?.uid}`);
+  
+  if (!auth.currentUser) {
+    console.error("❌ No authenticated user");
+    throw new Error("You must be logged in to update orders");
+  }
+
   try {
     const orderRef = doc(db, "orders", orderId);
     
-    // First verify the order exists and the user has permission
+    // First verify the order exists and get its data
     const orderSnap = await getDoc(orderRef);
     if (!orderSnap.exists()) {
+      console.error("❌ Order not found:", orderId);
       throw new Error("Order not found");
     }
 
     const orderData = orderSnap.data();
-    if (orderData.delivererUid !== auth.currentUser?.uid) {
+    console.log("📄 Current order data:", {
+      id: orderId,
+      status: orderData.status,
+      delivererUid: orderData.delivererUid,
+      timestamps: {
+        updatedAt: orderData.updatedAt?.toDate?.(),
+        pickedUpAt: orderData.pickedUpAt?.toDate?.(),
+        arrivedAtApartmentAt: orderData.arrivedAtApartmentAt?.toDate?.(),
+        deliveredAt: orderData.deliveredAt?.toDate?.(),
+        cancelledAt: orderData.cancelledAt?.toDate?.()
+      }
+    });
+    
+    // Verify user permissions
+    const isDeliverer = orderData.delivererUid === auth.currentUser.uid;
+    console.log("🔐 Permission check:", {
+      currentUser: auth.currentUser.uid,
+      orderDeliverer: orderData.delivererUid,
+      isDeliverer,
+      orderStatus: orderData.status,
+      attemptingStatus: newStatus
+    });
+
+    if (!isDeliverer) {
+      console.error("❌ Permission denied - Current user:", auth.currentUser.uid, "Order deliverer:", orderData.delivererUid);
       throw new Error("You don't have permission to update this order");
     }
 
-    const updateData = {
-      status: newStatus,
-      updatedAt: Timestamp.now()
+    // Validate status transition
+    const validTransitions = {
+      'Unassigned': ['Assigned', 'Cancelled'],
+      'Assigned': ['PickedUp', 'Cancelled'],
+      'PickedUp': ['ArrivedAtApartment', 'Cancelled'],
+      'ArrivedAtApartment': ['Delivered', 'Cancelled']
     };
 
-    // Add specific timestamp based on status
-    if (newStatus === 'Cancelled') {
-      updateData.cancelledAt = Timestamp.now();
-    } else if (newStatus === 'Delivered') {
-      updateData.deliveredAt = Timestamp.now();
-    } else if (newStatus === 'PickedUp') {
-      updateData.pickedUpAt = Timestamp.now();
-    } else if (newStatus === 'ArrivedAtApartment') {
-      updateData.arrivedAtApartmentAt = Timestamp.now();
+    const isValidTransition = validTransitions[orderData.status]?.includes(newStatus);
+    console.log("🔄 Status transition check:", {
+      currentStatus: orderData.status,
+      newStatus,
+      validTransitionsForCurrentStatus: validTransitions[orderData.status],
+      isValidTransition
+    });
+
+    if (!isValidTransition) {
+      console.error(`❌ Invalid status transition from ${orderData.status} to ${newStatus}`);
+      throw new Error(`Invalid status transition from ${orderData.status} to ${newStatus}`);
     }
 
-    console.log("📝 Attempting to update with data:", updateData);
-    await updateDoc(orderRef, updateData);
+    // Create update data with ONLY the fields allowed by security rules
+    const updatePayload = {
+      status: newStatus,
+      updatedAt: serverTimestamp() // Use server timestamp
+    };
+
+    // Add the appropriate timestamp field based on status
+    if (newStatus === 'ArrivedAtApartment') {
+      updatePayload.arrivedAtApartmentAt = serverTimestamp(); // Use server timestamp
+    }
+
+    // Log the exact update payload and affected fields
+    console.log("📝 Update operation details:", {
+      updateMethod: "updateDoc",
+      documentPath: `orders/${orderId}`,
+      updateFields: Object.keys(updatePayload),
+      // Log server timestamps as strings for clarity, as .toDate() won't work before write
+      updateDataForLogging: {
+        ...updatePayload,
+        updatedAt: "SERVER_TIMESTAMP",
+        ...(updatePayload.arrivedAtApartmentAt && { arrivedAtApartmentAt: "SERVER_TIMESTAMP" })
+      }
+    });
+
+    // Attempt the update
+    console.log("🚀 Initiating Firestore update...");
+    await updateDoc(orderRef, updatePayload);
     console.log("✅ Order status updated successfully");
-    return { success: true };
+
+    return { success: true, data: updatePayload }; // data will contain placeholders
   } catch (error) {
-    console.error("❌ Error updating order status:", error);
-    console.log("🔍 Current auth state:", auth.currentUser?.uid);
+    console.error("❌ Error updating order status:", {
+      errorCode: error.code,
+      errorMessage: error.message,
+      errorName: error.name,
+      errorStack: error.stack
+    });
+    console.log("🔍 Current auth state:", {
+      isAuthenticated: !!auth.currentUser,
+      uid: auth.currentUser?.uid,
+      email: auth.currentUser?.email
+    });
+    console.log("📡 Network status:", navigator.onLine ? 'online' : 'offline');
     throw error;
   }
 };
@@ -312,35 +385,61 @@ const updateOrderStatus = async (orderId, newStatus) => {
 // Function to place a new order
 // This would typically be called from a Model action, which is called by a Presenter
 const placeOrderInFirestore = async (orderData) => {
-  console.log("Attempting to place order in Firestore:", orderData);
+  console.log("🛒 Attempting to place order in Firestore:", orderData);
+  
+  if (!auth.currentUser) {
+    console.error("❌ No authenticated user");
+    throw new Error("You must be logged in to place an order");
+  }
+
   try {
-    // Add mandatory fields if not already present
+    // Validate required fields
+    const requiredFields = ['items', 'totalPrice', 'requesterUid', 'requesterName', 'requesterAddress', 'requesterPhone'];
+    const missingFields = requiredFields.filter(field => !orderData[field]);
+    
+    if (missingFields.length > 0) {
+      console.error("❌ Missing required fields:", missingFields);
+      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+    }
+
+    // Validate items array
+    if (!Array.isArray(orderData.items) || orderData.items.length === 0) {
+      console.error("❌ Invalid items array");
+      throw new Error("Order must contain at least one item");
+    }
+
+    // Add mandatory fields
     const completeOrderData = {
       ...orderData,
-      status: "Unassigned", // Initial status
-      paymentStatus: "Pending", // Initial status
+      status: "Unassigned",
+      paymentStatus: "Pending",
       delivererUid: null,
       delivererName: null,
       delivererPhone: null,
-      createdAt: Timestamp.now(), // Set creation time
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
       assignedAt: null,
       pickedUpAt: null,
+      arrivedAtApartmentAt: null,
       deliveredAt: null,
-      cancelledAt: null,
+      cancelledAt: null
     };
-    const docRef = await addDoc(collection(db, "orders"), completeOrderData);
-    console.log("Order placed successfully with ID:", docRef.id);
 
-    // Start tracking the new order if the user is the requester
-    if (myQuicaModel.user?.uid === orderData.requesterUid) {
-        startOrderTracking(docRef.id);
+    console.log("📝 Attempting to create order with data:", completeOrderData);
+    const docRef = await addDoc(collection(db, "orders"), completeOrderData);
+    console.log("✅ Order placed successfully with ID:", docRef.id);
+
+    // Start tracking the new order
+    if (auth.currentUser.uid === orderData.requesterUid) {
+      startOrderTracking(docRef.id);
     }
 
-    return { success: true, orderId: docRef.id };
+    return { success: true, orderId: docRef.id, data: completeOrderData };
   } catch (error) {
-    console.error("Error placing order in Firestore:", error);
-    myQuicaModel.setError("Failed to place order."); // Update model state
-    return { success: false, error: error };
+    console.error("❌ Error placing order in Firestore:", error);
+    console.log("🔍 Current auth state:", auth.currentUser?.uid);
+    console.log("📡 Network status:", navigator.onLine ? 'online' : 'offline');
+    throw error;
   }
 };
 

@@ -18,7 +18,7 @@ service cloud.firestore {
 
     function canDeliverOrders() {
       let userData = getUserData();
-      return userData.role == 'both' && userData.delivererStatus == 'active';
+      return userData.role == 'both';
     }
 
     function isValidOrderTransition(oldStatus, newStatus) {
@@ -87,8 +87,9 @@ service cloud.firestore {
         
         // Deliverer can update status of their assigned orders
         (isDelivererOfOrder() &&
-         isValidOrderTransition(resource.data.status, request.resource.data.status) &&
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(getAllowedStatusFields(request.resource.data.status))) ||
+         isValidOrderTransition(resource.data.status, request.resource.data.status) 
+         // && request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'updatedAt', 'arrivedAtApartmentAt', 'pickedUpAt', 'deliveredAt', 'cancelledAt'])
+         ) ||
         
         // Active deliverer can accept unassigned orders
         (resource.data.status == 'Unassigned' &&
