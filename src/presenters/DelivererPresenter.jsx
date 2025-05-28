@@ -24,6 +24,7 @@ const DelivererPresenter = observer(() => {
       delivererStatus={myQuicaModel.userProfile?.delivererStatus || null}
       availableOrders={myQuicaModel.availableOrders}
       delivererOrders={myQuicaModel.delivererOrders} // Pass deliverer orders
+      pastDelivererOrders={myQuicaModel.pastDelivererOrders} // Pass past deliverer orders
       onToggleStatus={handleToggleStatus}
       onAcceptOrder={handleAcceptOrder}
       acceptingOrderId={myQuicaModel.acceptingOrderId}

@@ -6,6 +6,7 @@ function DelivererView({
   delivererStatus,
   availableOrders,
   delivererOrders, // Add new prop
+  pastDelivererOrders, // Add new prop for past orders
   onToggleStatus,
   onAcceptOrder,
   acceptingOrderId,
@@ -102,7 +103,7 @@ function DelivererView({
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">Past Orders</h2>
               <div className="space-y-4">
-                {delivererOrders.filter(order => order.status === 'Delivered').map(order => (
+                {pastDelivererOrders.map(order => (
                   <div key={order.id} className="bg-white rounded-lg shadow-md p-4 border-l-4 border-green-500">
                     <div className="space-y-3">
                       {/* Header: Order ID and Status */}
@@ -133,7 +134,7 @@ function DelivererView({
                     </div>
                   </div>
                 ))}
-                {!delivererOrders.some(order => order.status === 'Delivered') && (
+                {pastDelivererOrders.length === 0 && (
                   <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-500">
                     No completed deliveries yet
                   </div>
@@ -171,6 +172,7 @@ DelivererView.propTypes = {
   delivererStatus: PropTypes.oneOf(['active', 'inactive', null]),
   availableOrders: PropTypes.arrayOf(orderShape).isRequired,
   delivererOrders: PropTypes.arrayOf(orderShape).isRequired, // Add prop type for deliverer orders
+  pastDelivererOrders: PropTypes.arrayOf(orderShape).isRequired, // Add prop type for past deliverer orders
   onToggleStatus: PropTypes.func.isRequired,
   onAcceptOrder: PropTypes.func.isRequired,
   acceptingOrderId: PropTypes.string,
